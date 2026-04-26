@@ -700,7 +700,12 @@ async function renderVideosView() {
     
     elContentArea.innerHTML = `
         <div class="section-wrap view-enter">
-            <h2 class="section-title">Our Stories</h2>
+            <h2 class="section-title" style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                Our Stories
+                <button id="reload-videos-btn" class="mini-mute-btn" style="margin: 0; width: 28px; height: 28px; font-size: 0.7rem;" aria-label="Refresh Videos" title="Refresh Videos">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </h2>
             <p class="section-subtitle">Moments captured in motion</p>
             
             <div id="videos-loader" class="video-loader">
@@ -724,6 +729,31 @@ async function renderVideosView() {
             await fetchYouTubeVideos();
             loadMoreBtn.disabled = false;
             loadMoreBtn.innerHTML = 'Load More ✨';
+        };
+    }
+
+    const reloadBtn = document.getElementById('reload-videos-btn');
+    if (reloadBtn) {
+        reloadBtn.onclick = async () => {
+            const listContainer = document.getElementById('videos-list');
+            const loader        = document.getElementById('videos-loader');
+            
+            // Reset state
+            State.ytNextPageToken = null;
+            if (listContainer) listContainer.innerHTML = '';
+            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+            if (loader) {
+                loader.style.display = 'block';
+                loader.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Fetching playlist…';
+            }
+
+            // Animate spin on the icon
+            const icon = reloadBtn.querySelector('i');
+            if (icon) icon.classList.add('fa-spin');
+            
+            await fetchYouTubeVideos();
+            
+            if (icon) icon.classList.remove('fa-spin');
         };
     }
 }
@@ -869,7 +899,7 @@ function initCakeLogic() {
     function onStartTap(e) {
         // 1. INSTANT UI UPDATE
         elCakeTrigger.classList.add('hidden');
-        if (cheersMuteBtn) cheersMuteBtn.style.display = 'none'; // Hide mute btn when tapped
+        // Kept mute button visible per user request
         elCakeDisplay.classList.remove('hidden');
         elCakeDisplay.classList.add('fade-in');
 
