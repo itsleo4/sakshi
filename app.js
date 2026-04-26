@@ -769,38 +769,44 @@ elLetterModal.addEventListener('click', (e) => {
 // ================================================================
 // 12. BIRTHDAY CAKE & CONFETTI
 // ================================================================
+const cakeSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
+cakeSound.preload = 'auto';
 
 function initCakeLogic() {
+
     function onStartTap(e) {
-        // Guarantee UI Update First
+        // 1. INSTANT UI UPDATE
         elCakeTrigger.classList.add('hidden');
         elCakeDisplay.classList.remove('hidden');
         elCakeDisplay.classList.add('fade-in');
 
-        // Play Sound Safely
-        try {
-            const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
-            popSound.volume = 0.5;
-            popSound.play().catch(() => {});
-        } catch (err) {}
+        // 2. TRIGGER HEAVY LOGIC IN NEXT FRAME (No blocking)
+        setTimeout(() => {
+            // Play Pre-cached Sound
+            try {
+                cakeSound.currentTime = 0;
+                cakeSound.volume = 0.5;
+                cakeSound.play().catch(() => {});
+            } catch (err) {}
 
-        // Popper Animation Safely
-        try { launchConfetti(); } catch (err) {}
-        
-        // Show Wish Safely
-        if (elBdayWish) {
-            elBdayWish.classList.remove('hidden');
-            elBdayWish.classList.add('fade-in');
+            // Popper Animation
+            try { launchConfetti(); } catch (err) {}
+            
+            // Show Wish
+            if (elBdayWish) {
+                elBdayWish.classList.remove('hidden');
+                elBdayWish.classList.add('fade-in');
 
-            setTimeout(() => {
-                elBdayWish.classList.remove('fade-in');
-                elBdayWish.classList.add('fade-out');
                 setTimeout(() => {
-                    elBdayWish.classList.add('hidden');
-                    elBdayWish.classList.remove('fade-out');
-                }, 800);
-            }, 5000);
-        }
+                    elBdayWish.classList.remove('fade-in');
+                    elBdayWish.classList.add('fade-out');
+                    setTimeout(() => {
+                        elBdayWish.classList.add('hidden');
+                        elBdayWish.classList.remove('fade-out');
+                    }, 800);
+                }, 5000);
+            }
+        }, 0);
     }
 
     // Use both click and touchstart for responsiveness
@@ -811,9 +817,8 @@ function initCakeLogic() {
     function onCakeTap(e) {
         if (e.type === 'touchstart') e.preventDefault();
         try {
-            const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
-            popSound.volume = 0.5;
-            popSound.play().catch(() => {});
+            cakeSound.currentTime = 0;
+            cakeSound.play().catch(() => {});
             launchConfetti();
         } catch (err) {}
     }
