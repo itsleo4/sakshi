@@ -330,6 +330,7 @@ function navigateTo(view) {
     // Toggle hero visibility
     const isHero = view === 'hero';
     elHeroSection.style.display = isHero ? 'flex' : 'none';
+    elContentArea.style.display = isHero ? 'none' : 'block';
     elFooter.classList.toggle('visible', isHero);
 
     if (isHero) {
@@ -802,11 +803,13 @@ function initCakeLogic() {
         }
     }
 
-    // Use only click to avoid touchstart interference
+    // Use both click and touchstart for responsiveness
     elBtnTapStart.addEventListener('click', onStartTap);
+    elBtnTapStart.addEventListener('touchstart', (e) => { e.preventDefault(); onStartTap(e); }, { passive: false });
     
     // Make cake tappable again for more poppers!
     function onCakeTap(e) {
+        if (e.type === 'touchstart') e.preventDefault();
         try {
             const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
             popSound.volume = 0.5;
@@ -815,6 +818,7 @@ function initCakeLogic() {
         } catch (err) {}
     }
     elCakeGifBtn.addEventListener('click', onCakeTap);
+    elCakeGifBtn.addEventListener('touchstart', onCakeTap, { passive: false });
 }
 function launchConfetti() {
     const colors = ['#ffccf2', '#b3e5ff', '#ffd700', '#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff4500'];

@@ -369,8 +369,8 @@ body.sidebar-open { overflow: hidden; }
     text-align: center;
     min-height: 100vh;
     padding: 2rem;
-    pointer-events: none;
 }
+
 
 .hero-name {
     font-family: var(--font-head);
