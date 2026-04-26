@@ -1,7 +1,7 @@
 import { 
     SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, 
     SUPABASE_PHOTO_FOLDER, SUPABASE_FEATURED_PHOTO,
-    CORRECT_PASSCODE, MUSIC_URL, YOUTUBE_API_KEY, 
+    CORRECT_PASSCODE, MUSIC_URL, CHEERS_URL, YOUTUBE_API_KEY, 
     YOUTUBE_PLAYLIST_ID, LOVE_LETTERS 
 } from './config.js';
 
@@ -844,10 +844,11 @@ elLetterModal.addEventListener('click', (e) => {
 // ================================================================
 // 12. BIRTHDAY CAKE & CONFETTI
 // ================================================================
-const cakeSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
-cakeSound.preload = 'auto';
+let cakeSound;
 
 function initCakeLogic() {
+    cakeSound = new Audio(CHEERS_URL);
+    cakeSound.preload = 'auto';
 
     function onStartTap(e) {
         // 1. INSTANT UI UPDATE
@@ -857,11 +858,32 @@ function initCakeLogic() {
 
         // 2. TRIGGER HEAVY LOGIC IN NEXT FRAME (No blocking)
         setTimeout(() => {
-            // Play Pre-cached Sound
+            // Play Pre-cached Sound (Cheers)
             try {
                 cakeSound.currentTime = 0;
-                cakeSound.volume = 0.5;
+                cakeSound.volume = 1; // Play cheers at full volume
                 cakeSound.play().catch(() => {});
+                
+                // Stop the cheers after 10 seconds
+                setTimeout(() => {
+                    cakeSound.pause();
+                    cakeSound.currentTime = 0;
+                }, 10000);
+            } catch (err) {}
+
+            // Start Melody Continuous Music
+            try {
+                State.musicOn = true;
+                const musicBtn = document.getElementById('music-toggle');
+                if (musicBtn) {
+                    musicBtn.classList.add('on');
+                    musicBtn.setAttribute('aria-pressed', 'true');
+                }
+                if (!elAudio.src || elAudio.src === window.location.href) {
+                    elAudio.src = MUSIC_URL;
+                }
+                elAudio.volume = 0.5; // Slightly lower volume for backend melody
+                elAudio.play().catch(() => {});
             } catch (err) {}
 
             // Popper Animation
@@ -894,6 +916,10 @@ function initCakeLogic() {
         try {
             cakeSound.currentTime = 0;
             cakeSound.play().catch(() => {});
+            setTimeout(() => {
+                cakeSound.pause();
+                cakeSound.currentTime = 0;
+            }, 10000);
             launchConfetti();
         } catch (err) {}
     }

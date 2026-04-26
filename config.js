@@ -16,7 +16,8 @@ export const SUPABASE_FEATURED_PHOTO = 'photo11.jpg'; // featured prominently
 export const CORRECT_PASSCODE = '210058';
 
 // --- Background Music ---
-export const MUSIC_URL = 'https://cdn.pixabay.com/audio/2022/10/14/audio_3d1ef338ee.mp3';
+export const MUSIC_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/sakshi/audio/meldoy.mp3`;
+export const CHEERS_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/sakshi/audio/cheers.mp3`;
 
 // --- YouTube Data API ---
 export const YOUTUBE_API_KEY      = import.meta.env.VITE_YOUTUBE_API_KEY;
