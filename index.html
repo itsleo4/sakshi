@@ -121,12 +121,24 @@
 
         <!-- Hero Section (default view) -->
         <section id="hero-section" class="hero-section" aria-label="Hero">
-            <div id="birthday-cake" class="birthday-cake" role="button" aria-label="A special cake for you">
-                <span class="cake-emoji">🎂</span>
-                <div class="cake-flame" id="cake-flame">🔥</div>
+            
+            <!-- Step 1: Initial Trigger -->
+            <div id="cake-trigger" class="cake-trigger-wrap">
+                <button id="btn-tap-start" class="btn-tap-start">Tap for a surprise ✨</button>
             </div>
-            <h1 class="hero-name" id="hero-title">Happy Birthday,<br>Sakshi 🌸</h1>
-            <p class="hero-tagline">A journey through our universe.</p>
+
+            <!-- Step 2: The Cake GIF (Visible after tap) -->
+            <div id="cake-display" class="cake-display hidden">
+                <div class="cake-gif-container" id="cake-gif-btn" role="button" aria-label="Tap the cake">
+                    <img src="https://i.ibb.co/1f4qSsmV/2297342-af6bf.gif" alt="Birthday Cake">
+                </div>
+            </div>
+
+            <!-- Step 3: The Wish (Visible after cake tap) -->
+            <div id="bday-wish" class="bday-wish hidden">
+                <h1 class="hero-name">Happy Birthday,<br>Sakshi 🌸</h1>
+            </div>
+
             <p class="hero-cta">Open the menu ↑ to explore</p>
         </section>
 

@@ -62,13 +62,11 @@ const elLbCaption     = document.getElementById('lb-caption');
 const elLbClose       = document.getElementById('lb-close');
 const elAudio         = document.getElementById('bg-audio');
 const elBhCanvas      = document.getElementById('bh-canvas');
-const elLetterModal   = document.getElementById('letter-modal');
-const elModalTitle   = document.getElementById('modal-letter-title');
-const elModalBody    = document.getElementById('modal-letter-body');
-const elLetterClose   = document.getElementById('letter-close');
-const elCake          = document.getElementById('birthday-cake');
-const elCakeFlame     = document.getElementById('cake-flame');
-const elHeroTitle     = document.getElementById('hero-title');
+const elCakeTrigger   = document.getElementById('cake-trigger');
+const elBtnTapStart   = document.getElementById('btn-tap-start');
+const elCakeDisplay   = document.getElementById('cake-display');
+const elCakeGifBtn    = document.getElementById('cake-gif-btn');
+const elBdayWish      = document.getElementById('bday-wish');
 
 // ================================================================
 // 4. THREE.JS — Black Hole
@@ -523,10 +521,25 @@ async function loadPhotosGrid() {
             `;
 
             // — Main Action (Open Lightbox) —
+            let startX, startY;
+            card.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+
             function open(e) {
                 // Ignore if clicking the menu button
                 if (e.target.closest('.photo-menu-btn')) return;
-                if (e.type === 'touchend') e.preventDefault();
+                
+                // If it was a touch, check if they moved (scrolled)
+                if (e.type === 'touchend') {
+                    const endX = e.changedTouches[0].clientX;
+                    const endY = e.changedTouches[0].clientY;
+                    const dist = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                    if (dist > 10) return; // Ignore if scrolled more than 10px
+                    e.preventDefault();
+                }
+                
                 openLightbox(url, `Memory #${idx + 1}`);
             }
             card.addEventListener('click',    open);
@@ -764,74 +777,77 @@ elLetterModal.addEventListener('click', (e) => {
 // 12. BIRTHDAY CAKE & CONFETTI
 // ================================================================
 
+function initCakeLogic() {
+    // Step 1: Initial Tap
+    function onStartTap(e) {
+        if (e.type === 'touchstart') e.preventDefault();
+        elCakeTrigger.classList.add('hidden');
+        elCakeDisplay.classList.remove('hidden');
+        elCakeDisplay.classList.add('fade-in');
+    }
+
+    elBtnTapStart.addEventListener('click', onStartTap);
+    elBtnTapStart.addEventListener('touchstart', onStartTap, { passive: false });
+
+    // Step 2: Cake Tap
+    let cakeTapped = false;
+    function onCakeTap(e) {
+        if (cakeTapped) return;
+        if (e.type === 'touchstart') e.preventDefault();
+        cakeTapped = true;
+
+        // Popper Animation
+        launchConfetti();
+        
+        // Show Wish
+        elBdayWish.classList.remove('hidden');
+        elBdayWish.classList.add('fade-in');
+
+        // Step 3: Hide Wish after 5 seconds
+        setTimeout(() => {
+            elBdayWish.classList.remove('fade-in');
+            elBdayWish.classList.add('fade-out');
+            setTimeout(() => {
+                elBdayWish.classList.add('hidden');
+                elBdayWish.classList.remove('fade-out');
+                cakeTapped = false; // Allow re-tap for more poppers!
+            }, 800);
+        }, 5000);
+    }
+
+    elCakeGifBtn.addEventListener('click', onCakeTap);
+    elCakeGifBtn.addEventListener('touchstart', onCakeTap, { passive: false });
+}
 function launchConfetti() {
-    const colors = ['#ffccf2', '#b3e5ff', '#ffd700', '#69db7c', '#ff6b6b'];
-    const shapes = ['★', '❤', '●', '✦'];
+    const colors = ['#ffccf2', '#b3e5ff', '#ffd700', '#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff4500'];
+    const shapes = ['★', '❤', '●', '✦', '◆'];
     
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 100; i++) {
         const p = document.createElement('div');
         p.className = 'confetti-p';
         p.textContent = shapes[Math.floor(Math.random() * shapes.length)];
         p.style.color = colors[Math.floor(Math.random() * colors.length)];
-        p.style.fontSize = (Math.random() * 20 + 10) + 'px';
+        p.style.fontSize = (Math.random() * 24 + 12) + 'px';
         p.style.left = '50%';
         p.style.top = '50%';
         document.body.appendChild(p);
 
         const angle = Math.random() * Math.PI * 2;
-        const velocity = Math.random() * 500 + 200;
+        const velocity = Math.random() * 600 + 300;
         const tx = Math.cos(angle) * velocity;
         const ty = Math.sin(angle) * velocity;
 
         gsap.to(p, {
             x: tx,
             y: ty,
-            rotation: Math.random() * 720,
+            rotation: Math.random() * 1080,
             opacity: 0,
-            duration: Math.random() * 2 + 1.5,
-            ease: 'power2.out',
+            scale: Math.random() * 2,
+            duration: Math.random() * 2.5 + 2,
+            ease: 'expo.out',
             onComplete: () => p.remove()
         });
     }
-}
-
-function initCakeLogic() {
-    let cakeTapped = false;
-    
-    function onCakeTap(e) {
-        if (cakeTapped) return;
-        if (e.type === 'touchstart') e.preventDefault();
-        cakeTapped = true;
-
-        // 1. Light candle
-        elCakeFlame.classList.add('flame-active');
-        
-        // 2. Confetti explosion
-        setTimeout(launchConfetti, 300);
-
-        // 3. Reveal text
-        setTimeout(() => {
-            elHeroTitle.classList.add('revealed');
-        }, 500);
-
-        // 4. Cake Fades Out after 4 seconds
-        setTimeout(() => {
-            gsap.to(elCake, {
-                opacity: 0,
-                y: -50,
-                duration: 1.5,
-                ease: 'power2.in',
-                onComplete: () => {
-                    elCake.style.display = 'none';
-                    // Show menu tip if not already seen
-                    gsap.to('.hero-cta', { opacity: 1, duration: 1 });
-                }
-            });
-        }, 4000);
-    }
-
-    elCake.addEventListener('click', onCakeTap);
-    elCake.addEventListener('touchstart', onCakeTap, { passive: false });
 }
 
 // ================================================================

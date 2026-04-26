@@ -406,54 +406,66 @@ body.sidebar-open { overflow: hidden; }
     50%       { opacity: 0.7; }
 }
 
-/* Birthday Cake */
-.birthday-cake {
-    font-size: 5rem;
-    position: relative;
-    cursor: pointer;
+/* Birthday Cake Logic UI */
+.cake-trigger-wrap {
     margin-bottom: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: all; /* Allow cake clicks even if hero section is non-interactive */
+}
+.btn-tap-start {
+    background: linear-gradient(135deg, var(--gold), #ffcc00);
+    color: var(--bg);
+    padding: 1.2rem 2.2rem;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: 0 0 30px var(--gold-glow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: pulse-glow 2s infinite;
+}
+.btn-tap-start:active { transform: scale(0.92); }
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px var(--gold-glow); }
+    50%       { box-shadow: 0 0 40px var(--gold-glow), 0 0 60px rgba(255,215,0,0.2); }
+}
+
+.cake-display {
+    max-width: 280px;
+    margin: 0 auto 1.5rem;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.cake-gif-container {
+    cursor: pointer;
     transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
-    user-select: none;
 }
-.birthday-cake:active { transform: scale(0.9); }
-
-.cake-emoji {
-    filter: drop-shadow(0 0 20px rgba(179,229,255,0.4));
-}
-
-.cake-flame {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 1.8rem;
-    opacity: 0;
-    filter: drop-shadow(0 0 10px #ff6b00);
+.cake-gif-container:active { transform: scale(0.9); }
+.cake-gif-container img {
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 50px rgba(255,255,255,0.1);
 }
 
-@keyframes flicker {
-    0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.9; }
-    50%       { transform: translateX(-50%) scale(1.1) rotate(2deg); opacity: 1; }
+.bday-wish {
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(.34,1.56,.64,1);
 }
 
-.flame-active {
-    opacity: 1 !important;
-    animation: flicker 0.15s ease-in-out infinite alternate !important;
+.hidden {
+    display: none !important;
 }
 
-/* Hero title hidden logic for cake transition */
-#hero-title {
-    opacity: 0;
-    transform: scale(0.9);
-    transition: opacity 1s ease, transform 1s cubic-bezier(.34,1.56,.64,1);
+/* Visibility states for JS */
+.fade-in {
+    animation: fade-in 0.8s both;
 }
-#hero-title.revealed {
-    opacity: 1;
-    transform: scale(1);
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-out {
+    animation: fade-out 0.8s both;
+}
+@keyframes fade-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-15px); }
 }
 
 /* ────────────────────────────────────────────────────────────
