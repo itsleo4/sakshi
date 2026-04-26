@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a1a">
+    <meta name="description" content="A cosmic birthday surprise for Sakshi, from Nitin.">
+    <title>The Gravity of Us ✨</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- App Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- =====================================================
+         LAYER 0: Three.js canvas (deep background)
+    ===================================================== -->
+    <canvas id="bh-canvas"></canvas>
+
+    <!-- =====================================================
+         LAYER 1: GATEKEEPER — Passcode Screen
+    ===================================================== -->
+    <div id="gatekeeper" class="overlay" role="dialog" aria-modal="true" aria-label="Enter passcode">
+        <div class="pass-card">
+            <h1 class="pass-brand">The Gravity of Us</h1>
+            <p class="pass-hint">Enter the universe seed</p>
+            <div class="pass-display" id="pass-display" aria-live="polite">
+                <span id="pass-dots"></span>
+            </div>
+            <div class="keypad" id="keypad" role="group" aria-label="Numeric keypad">
+                <button class="key" data-key="1" aria-label="1">1</button>
+                <button class="key" data-key="2" aria-label="2">2</button>
+                <button class="key" data-key="3" aria-label="3">3</button>
+                <button class="key" data-key="4" aria-label="4">4</button>
+                <button class="key" data-key="5" aria-label="5">5</button>
+                <button class="key" data-key="6" aria-label="6">6</button>
+                <button class="key" data-key="7" aria-label="7">7</button>
+                <button class="key" data-key="8" aria-label="8">8</button>
+                <button class="key" data-key="9" aria-label="9">9</button>
+                <button class="key key--clear" data-key="clear" aria-label="Clear">⌫</button>
+                <button class="key" data-key="0" aria-label="0">0</button>
+                <button class="key key--enter" data-key="enter" aria-label="Confirm">➔</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================
+         LAYER 2: BIRTHDAY REVEAL (shown after explosion)
+    ===================================================== -->
+    <div id="birthday-reveal" aria-hidden="true">
+        <h2 class="bday-title">Happy Birthday,<br>Sakshi</h2>
+        <p class="bday-sub">A journey through our universe.</p>
+    </div>
+
+    <!-- =====================================================
+         LAYER 3: MAIN APP (hidden until unlocked)
+    ===================================================== -->
+    <div id="main-app" aria-hidden="true">
+
+        <!-- Topbar -->
+        <header class="topbar">
+            <button id="hamburger-btn" class="hamburger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar-menu">
+                <i class="fas fa-bars" aria-hidden="true"></i>
+            </button>
+        </header>
+
+        <!-- Sidebar overlay backdrop -->
+        <div id="sidebar-overlay" aria-hidden="true"></div>
+
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar-menu" class="sidebar" aria-label="Main Navigation">
+            <p class="sidebar-brand">✨ The Gravity of Us</p>
+
+            <div class="nav-section">
+                <span class="nav-label">Explore</span>
+                <button class="nav-btn active" data-view="hero" aria-current="page">
+                    <i class="fas fa-star" aria-hidden="true"></i>Home
+                </button>
+            </div>
+
+            <div class="nav-section">
+                <span class="nav-label">Memories</span>
+                <button class="nav-btn" data-view="photos">
+                    <i class="fas fa-images" aria-hidden="true"></i>Photos
+                </button>
+                <button class="nav-btn" data-view="videos">
+                    <i class="fas fa-film" aria-hidden="true"></i>Videos
+                </button>
+            </div>
+
+            <div class="nav-section">
+                <span class="nav-label">Our Story</span>
+                <button class="nav-btn" data-view="letters">
+                    <i class="fas fa-envelope-open-text" aria-hidden="true"></i>Love Letters
+                </button>
+                <button class="nav-btn" data-view="games">
+                    <i class="fas fa-gamepad" aria-hidden="true"></i>Games Zone
+                </button>
+            </div>
+
+            <hr class="sidebar-divider" aria-hidden="true">
+
+            <div class="nav-section">
+                <button class="nav-btn" data-view="settings">
+                    <i class="fas fa-cog" aria-hidden="true"></i>Settings
+                </button>
+                <button class="nav-btn nav-btn--danger" id="logout-btn">
+                    <i class="fas fa-lock" aria-hidden="true"></i>Lock Site
+                </button>
+            </div>
+        </nav>
+
+        <!-- Hero Section (default view) -->
+        <section id="hero-section" class="hero-section" aria-label="Hero">
+            <h1 class="hero-name">Happy Birthday,<br>Sakshi 🌸</h1>
+            <p class="hero-tagline">A journey through our universe.</p>
+            <p class="hero-cta">Open the menu ↑ to explore</p>
+        </section>
+
+        <!-- Dynamic Content Area -->
+        <main id="content-area" aria-live="polite" aria-label="Main content"></main>
+
+        <!-- Footer -->
+        <footer id="footer" class="site-footer">
+            <p>Every moment with you defies gravity.</p>
+            <p class="footer-credit">
+                Built with ✨ by
+                <a href="https://instagram.com/odincalm0" target="_blank" rel="noopener noreferrer">@odincalm0</a>
+            </p>
+        </footer>
+
+    </div><!-- /main-app -->
+
+    <!-- Lightbox for photos -->
+    <div id="lightbox" aria-modal="true" role="dialog" aria-label="Photo viewer">
+        <button id="lb-close" aria-label="Close photo"><i class="fas fa-times" aria-hidden="true"></i></button>
+        <img id="lb-img" src="" alt="">
+        <p id="lb-caption"></p>
+    </div>
+
+    <!-- Background audio -->
+    <audio id="bg-audio" loop preload="none"></audio>
+
+    <!-- =====================================================
+         SCRIPTS  (order matters)
+    ===================================================== -->
+    <!-- CDN Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.3/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+    <!-- App scripts -->
+    <script type="module" src="/app.js"></script>
+</body>
+</html>
