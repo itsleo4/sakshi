@@ -67,6 +67,10 @@ const elBtnTapStart   = document.getElementById('btn-tap-start');
 const elCakeDisplay   = document.getElementById('cake-display');
 const elCakeGifBtn    = document.getElementById('cake-gif-btn');
 const elBdayWish      = document.getElementById('bday-wish');
+const elLetterModal   = document.getElementById('letter-modal');
+const elModalTitle    = document.getElementById('modal-letter-title');
+const elModalBody     = document.getElementById('modal-letter-body');
+const elLetterClose   = document.getElementById('letter-close');
 
 // ================================================================
 // 4. THREE.JS — Black Hole
@@ -266,25 +270,13 @@ function successUnlock() {
     document.body.appendChild(flash);
     gsap.to(flash, { opacity: 0, duration: 1.2, onComplete: () => flash.remove() });
 
-    // Birthday reveal text materialises
+    // Show main app shortly after explosion starts
     setTimeout(() => {
-        gsap.to(elBdayReveal, { opacity: 1, duration: 0.8 });
-        gsap.from(elBdayReveal.querySelector('.bday-title'), {
-            scale: 0, duration: 1.3, ease: 'elastic.out(1, 0.5)'
-        });
-        gsap.from(elBdayReveal.querySelector('.bday-sub'), {
-            y: 18, opacity: 0, duration: 0.8, delay: 0.9
-        });
-    }, 400);
-
-    // Show main app after 2.8s
-    setTimeout(() => {
-        gsap.to(elBdayReveal, { opacity: 0, duration: 0.7 });
         elMainApp.classList.add('visible');
         elMainApp.removeAttribute('aria-hidden');
         elFooter.classList.add('visible');
         gsap.from(elHeroSection, { opacity: 0, y: 24, duration: 0.9 });
-    }, 2800);
+    }, 800);
 }
 
 // ================================================================
@@ -796,6 +788,11 @@ function initCakeLogic() {
         if (e.type === 'touchstart') e.preventDefault();
         cakeTapped = true;
 
+        // Play Sound
+        const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
+        popSound.volume = 0.5;
+        popSound.play().catch(() => {});
+
         // Popper Animation
         launchConfetti();
         
@@ -1022,11 +1019,12 @@ function initCatchGame() {
             hearts.push({ x: Math.random() * canvas.width, y: -20, speed: 1.6 + Math.random() * 1.8 });
         }
 
-        hearts.forEach((h, i) => {
+        for (let i = hearts.length - 1; i >= 0; i--) {
+            const h = hearts[i];
             h.y += h.speed;
             ctx.fillText('❤️', h.x, h.y);
             // Catch check
-            if (h.y > canvas.height - 55 && Math.abs(h.x - catcherX) < 26) {
+            if (h.y > canvas.height - 55 && Math.abs(h.x - catcherX) < 32) {
                 hearts.splice(i, 1);
                 catches++;
                 const st = document.getElementById('catch-status');
@@ -1038,7 +1036,7 @@ function initCatchGame() {
             } else if (h.y > canvas.height) {
                 hearts.splice(i, 1);
             }
-        });
+        }
 
         State.catchRAF = requestAnimationFrame(loop);
     }
@@ -1130,7 +1128,9 @@ function closeLightbox() {
 
 elLbClose.addEventListener('click',    closeLightbox);
 elLbClose.addEventListener('touchend', (e) => { e.preventDefault(); closeLightbox(); }, { passive: false });
-elLightbox.addEventListener('click', (e) => { if (e.target === elLightbox) closeLightbox(); });
+elLightbox.addEventListener('click', (e) => { 
+    if (e.target === elLightbox || e.target === elLbImg) closeLightbox(); 
+});
 
 // Confetti logic moved to Section 12 for unified management.
 

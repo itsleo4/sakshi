@@ -932,12 +932,6 @@ body.sidebar-open { overflow: hidden; }
     pointer-events: none;
     z-index: 1000;
 }
-    overflow: hidden;
-    transition: max-height 0.7s ease, padding 0.4s ease;
-}
-.envelope.open .envelope__body {
-    max-height: 1200px;
-}
 
 .letter__number {
     font-size: 0.62rem;
