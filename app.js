@@ -62,6 +62,13 @@ const elLbCaption     = document.getElementById('lb-caption');
 const elLbClose       = document.getElementById('lb-close');
 const elAudio         = document.getElementById('bg-audio');
 const elBhCanvas      = document.getElementById('bh-canvas');
+const elLetterModal   = document.getElementById('letter-modal');
+const elModalTitle   = document.getElementById('modal-letter-title');
+const elModalBody    = document.getElementById('modal-letter-body');
+const elLetterClose   = document.getElementById('letter-close');
+const elCake          = document.getElementById('birthday-cake');
+const elCakeFlame     = document.getElementById('cake-flame');
+const elHeroTitle     = document.getElementById('hero-title');
 
 // ================================================================
 // 4. THREE.JS — Black Hole
@@ -704,38 +711,127 @@ function renderVideosView() {
 // 10. LETTERS VIEW
 // ================================================================
 function renderLettersView() {
-    const envelopes = LOVE_LETTERS.map((letter, i) => `
+    const envelopesArr = LOVE_LETTERS.map((letter, i) => `
         <div class="envelope" data-letter="${i}" role="button" aria-label="Open letter ${i+1}" tabindex="0">
             <div class="envelope__flap"></div>
             <div class="envelope__body">
                 <p class="letter__number">Letter ${toRoman(i + 1)}</p>
                 <h3 class="letter__title">${escHtml(letter.title)}</h3>
-                <p class="letter__text ${letter.isPoem ? 'letter__text--poem' : ''}">${escHtml(letter.content)}</p>
-                <p class="letter__sig">— Nitin</p>
+                <p class="envelope__hint">tap to read</p>
             </div>
-            <p class="envelope__hint">Letter ${i+1} of ${LOVE_LETTERS.length} · tap to open</p>
         </div>`).join('');
 
     elContentArea.innerHTML = `
         <div class="section-wrap view-enter">
             <h2 class="section-title">Love Letters</h2>
-            <p class="section-subtitle">Tap an envelope to open</p>
-            <div class="letters-list">${envelopes}</div>
+            <p class="section-subtitle">Heartfelt notes just for you</p>
+            <div class="letters-list">${envelopesArr}</div>
         </div>`;
 
-    // Bind envelope toggle
+    // Open modal on click
     elContentArea.querySelectorAll('.envelope').forEach(env => {
-        function toggle(e) {
+        function open(e) {
             if (e.type === 'touchend') e.preventDefault();
-            const isOpen = env.classList.contains('open');
-            // close all
-            elContentArea.querySelectorAll('.envelope.open').forEach(e2 => e2.classList.remove('open'));
-            if (!isOpen) env.classList.add('open');
+            const i = env.dataset.letter;
+            const letter = LOVE_LETTERS[i];
+            
+            elModalTitle.textContent = letter.title;
+            elModalBody.textContent = letter.content;
+            if (letter.isPoem) elModalBody.classList.add('letter__text--poem');
+            else elModalBody.classList.remove('letter__text--poem');
+
+            elLetterModal.classList.add('visible');
+            elLetterModal.setAttribute('aria-hidden', 'false');
         }
-        env.addEventListener('click',    toggle);
-        env.addEventListener('touchend', toggle, { passive: false });
-        env.addEventListener('keydown',  (e) => { if (e.key === 'Enter' || e.key === ' ') toggle(e); });
+        env.addEventListener('click',    open);
+        env.addEventListener('touchend', open, { passive: false });
     });
+}
+
+// Close Letter Modal
+elLetterClose.addEventListener('click', () => {
+    elLetterModal.classList.remove('visible');
+    elLetterModal.setAttribute('aria-hidden', 'true');
+});
+elLetterModal.addEventListener('click', (e) => {
+    if (e.target === elLetterModal) {
+        elLetterModal.classList.remove('visible');
+        elLetterModal.setAttribute('aria-hidden', 'true');
+    }
+});
+
+// ================================================================
+// 12. BIRTHDAY CAKE & CONFETTI
+// ================================================================
+
+function launchConfetti() {
+    const colors = ['#ffccf2', '#b3e5ff', '#ffd700', '#69db7c', '#ff6b6b'];
+    const shapes = ['★', '❤', '●', '✦'];
+    
+    for (let i = 0; i < 60; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-p';
+        p.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+        p.style.color = colors[Math.floor(Math.random() * colors.length)];
+        p.style.fontSize = (Math.random() * 20 + 10) + 'px';
+        p.style.left = '50%';
+        p.style.top = '50%';
+        document.body.appendChild(p);
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Math.random() * 500 + 200;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity;
+
+        gsap.to(p, {
+            x: tx,
+            y: ty,
+            rotation: Math.random() * 720,
+            opacity: 0,
+            duration: Math.random() * 2 + 1.5,
+            ease: 'power2.out',
+            onComplete: () => p.remove()
+        });
+    }
+}
+
+function initCakeLogic() {
+    let cakeTapped = false;
+    
+    function onCakeTap(e) {
+        if (cakeTapped) return;
+        if (e.type === 'touchstart') e.preventDefault();
+        cakeTapped = true;
+
+        // 1. Light candle
+        elCakeFlame.classList.add('flame-active');
+        
+        // 2. Confetti explosion
+        setTimeout(launchConfetti, 300);
+
+        // 3. Reveal text
+        setTimeout(() => {
+            elHeroTitle.classList.add('revealed');
+        }, 500);
+
+        // 4. Cake Fades Out after 4 seconds
+        setTimeout(() => {
+            gsap.to(elCake, {
+                opacity: 0,
+                y: -50,
+                duration: 1.5,
+                ease: 'power2.in',
+                onComplete: () => {
+                    elCake.style.display = 'none';
+                    // Show menu tip if not already seen
+                    gsap.to('.hero-cta', { opacity: 1, duration: 1 });
+                }
+            });
+        }, 4000);
+    }
+
+    elCake.addEventListener('click', onCakeTap);
+    elCake.addEventListener('touchstart', onCakeTap, { passive: false });
 }
 
 // ================================================================
@@ -1020,28 +1116,7 @@ elLbClose.addEventListener('click',    closeLightbox);
 elLbClose.addEventListener('touchend', (e) => { e.preventDefault(); closeLightbox(); }, { passive: false });
 elLightbox.addEventListener('click', (e) => { if (e.target === elLightbox) closeLightbox(); });
 
-// ================================================================
-// 14. CONFETTI
-// ================================================================
-function launchConfetti() {
-    const palette = ['#ffccf2','#b3e5ff','#ffd700','#ff9de2','#69db7c','#74c0fc'];
-    for (let i = 0; i < 65; i++) {
-        setTimeout(() => {
-            const el  = document.createElement('div');
-            el.className = 'confetti';
-            el.style.cssText = `left:${Math.random()*100}vw;top:-12px;background:${palette[i % palette.length]}`;
-            document.body.appendChild(el);
-            gsap.to(el, {
-                y:        window.innerHeight + 20,
-                x:        `+=${(Math.random() - 0.5) * 220}`,
-                rotation: Math.random() * 720,
-                duration: 2.5 + Math.random() * 2,
-                ease:     'power1.out',
-                onComplete: () => el.remove()
-            });
-        }, i * 32);
-    }
-}
+// Confetti logic moved to Section 12 for unified management.
 
 // ================================================================
 // 15. HELPERS
@@ -1072,5 +1147,6 @@ elGatekeeper.addEventListener('click', (e) => {
 });
 
 // Done — all listeners are in place, gatekeeper is visible by default.
+initCakeLogic();
 
 }); // end DOMContentLoaded

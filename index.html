@@ -121,7 +121,11 @@
 
         <!-- Hero Section (default view) -->
         <section id="hero-section" class="hero-section" aria-label="Hero">
-            <h1 class="hero-name">Happy Birthday,<br>Sakshi 🌸</h1>
+            <div id="birthday-cake" class="birthday-cake" role="button" aria-label="A special cake for you">
+                <span class="cake-emoji">🎂</span>
+                <div class="cake-flame" id="cake-flame">🔥</div>
+            </div>
+            <h1 class="hero-name" id="hero-title">Happy Birthday,<br>Sakshi 🌸</h1>
             <p class="hero-tagline">A journey through our universe.</p>
             <p class="hero-cta">Open the menu ↑ to explore</p>
         </section>
@@ -139,6 +143,16 @@
         </footer>
 
     </div><!-- /main-app -->
+
+    <!-- Modal for Letters -->
+    <div id="letter-modal" class="letter-modal" aria-hidden="true" role="dialog" aria-modal="true">
+        <button id="letter-close" class="modal-close" aria-label="Close letter">&times;</button>
+        <div class="letter-modal-content">
+            <h2 id="modal-letter-title" class="letter-modal-title"></h2>
+            <div id="modal-letter-body" class="letter-modal-body"></div>
+            <p class="letter-modal-sig">— Nitin</p>
+        </div>
+    </div>
 
     <!-- Lightbox for photos -->
     <div id="lightbox" aria-modal="true" role="dialog" aria-label="Photo viewer">
