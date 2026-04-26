@@ -770,54 +770,51 @@ elLetterModal.addEventListener('click', (e) => {
 // ================================================================
 
 function initCakeLogic() {
-    let cakeTapped = false;
-    
     function onStartTap(e) {
-        if (cakeTapped) return;
-        if (e.type === 'touchstart') e.preventDefault();
-        cakeTapped = true;
-
-        // 1. Hide Button, Show Cake GIF
+        // Guarantee UI Update First
         elCakeTrigger.classList.add('hidden');
         elCakeDisplay.classList.remove('hidden');
         elCakeDisplay.classList.add('fade-in');
 
-        // 2. Play Sound
-        const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
-        popSound.volume = 0.5;
-        popSound.play().catch(() => {});
+        // Play Sound Safely
+        try {
+            const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
+            popSound.volume = 0.5;
+            popSound.play().catch(() => {});
+        } catch (err) {}
 
-        // 3. Popper Animation
-        launchConfetti();
+        // Popper Animation Safely
+        try { launchConfetti(); } catch (err) {}
         
-        // 4. Show Wish
-        elBdayWish.classList.remove('hidden');
-        elBdayWish.classList.add('fade-in');
+        // Show Wish Safely
+        if (elBdayWish) {
+            elBdayWish.classList.remove('hidden');
+            elBdayWish.classList.add('fade-in');
 
-        // 5. Hide Wish after 5 seconds
-        setTimeout(() => {
-            elBdayWish.classList.remove('fade-in');
-            elBdayWish.classList.add('fade-out');
             setTimeout(() => {
-                elBdayWish.classList.add('hidden');
-                elBdayWish.classList.remove('fade-out');
-            }, 800);
-        }, 5000);
+                elBdayWish.classList.remove('fade-in');
+                elBdayWish.classList.add('fade-out');
+                setTimeout(() => {
+                    elBdayWish.classList.add('hidden');
+                    elBdayWish.classList.remove('fade-out');
+                }, 800);
+            }, 5000);
+        }
     }
 
+    // Use only click to avoid touchstart interference
     elBtnTapStart.addEventListener('click', onStartTap);
-    elBtnTapStart.addEventListener('touchstart', onStartTap, { passive: false });
     
     // Make cake tappable again for more poppers!
     function onCakeTap(e) {
-        if (e.type === 'touchstart') e.preventDefault();
-        const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
-        popSound.volume = 0.5;
-        popSound.play().catch(() => {});
-        launchConfetti();
+        try {
+            const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
+            popSound.volume = 0.5;
+            popSound.play().catch(() => {});
+            launchConfetti();
+        } catch (err) {}
     }
     elCakeGifBtn.addEventListener('click', onCakeTap);
-    elCakeGifBtn.addEventListener('touchstart', onCakeTap, { passive: false });
 }
 function launchConfetti() {
     const colors = ['#ffccf2', '#b3e5ff', '#ffd700', '#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff4500'];
