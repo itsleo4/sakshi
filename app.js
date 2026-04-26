@@ -14,24 +14,33 @@ import {
 document.addEventListener('DOMContentLoaded', () => {
 
 // ================================================================
-// 1. SUPABASE INIT
-// ================================================================
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ================================================================
-// 2. STATE
+// 2. STATE (Initialize before services)
 // ================================================================
 const State = {
     loggedIn:      false,
     currentView:   'hero',
     musicOn:       false,
     starsOn:       true,
-    catchRAF:      null,   // requestAnimationFrame handle for catch game
+    catchRAF:      null,   
     memLocked:     false,
     memMatched:    0,
     memInitDone:   false,
     pinnedPhotos:  JSON.parse(localStorage.getItem('pinned_photos') || '[]'),
 };
+
+// ================================================================
+// 1. SUPABASE INIT (Safe initialization)
+// ================================================================
+let sb;
+try {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+        console.warn('Supabase keys missing. Site will run in limited mode.');
+    } else {
+        sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+} catch (e) {
+    console.error('Supabase init failed:', e);
+}
 
 // ================================================================
 // 3. ELEMENT REFERENCES
