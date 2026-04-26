@@ -799,6 +799,7 @@ body.sidebar-open { overflow: hidden; }
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     overflow: hidden;
+    animation: fade-up 0.5s ease both;
 }
 
 .video-card__title {
@@ -810,13 +811,14 @@ body.sidebar-open { overflow: hidden; }
     align-items: center;
     gap: 0.5rem;
 }
-.video-card__title i { color: #ff4040; }
+.video-card__title i { color: #ff0000; }
 
 .video-embed {
     position: relative;
     padding-bottom: 56.25%;
     height: 0;
     overflow: hidden;
+    background: #000;
 }
 .video-embed iframe {
     position: absolute;
@@ -824,6 +826,41 @@ body.sidebar-open { overflow: hidden; }
     width: 100%; height: 100%;
     border: none;
 }
+
+.video-loader {
+    text-align: center;
+    padding: 3rem 0;
+    color: var(--cyan);
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+.load-more-btn {
+    display: block;
+    width: 100%;
+    max-width: 200px;
+    margin: 2rem auto;
+    padding: 0.8rem;
+    background: var(--glass);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.load-more-btn:hover {
+    background: var(--cyan-glow);
+    color: white;
+    transform: translateY(-2px);
+}
+.load-more-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
 
 /* ────────────────────────────────────────────────────────────
    13. LOVE LETTERS

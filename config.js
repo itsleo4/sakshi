@@ -18,12 +18,10 @@ export const CORRECT_PASSCODE = '210058';
 // --- Background Music ---
 export const MUSIC_URL = 'https://cdn.pixabay.com/audio/2022/10/14/audio_3d1ef338ee.mp3';
 
-// --- YouTube Video IDs ---
-export const VIDEOS = [
-    { title: 'Our First Trip',           id: 'dQw4w9WgXcQ' },
-    { title: 'That Night We Stayed Out', id: 'dQw4w9WgXcQ' },
-    { title: 'A Moment I Never Forget',  id: 'dQw4w9WgXcQ' },
-];
+// --- YouTube Data API ---
+export const YOUTUBE_API_KEY      = import.meta.env.VITE_YOUTUBE_API_KEY;
+export const YOUTUBE_PLAYLIST_ID  = import.meta.env.VITE_YOUTUBE_PLAYLIST_ID;
+
 
 // --- Love Letters ---
 export const LOVE_LETTERS = [

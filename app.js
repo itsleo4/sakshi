@@ -1,7 +1,8 @@
 import { 
     SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, 
     SUPABASE_PHOTO_FOLDER, SUPABASE_FEATURED_PHOTO,
-    CORRECT_PASSCODE, MUSIC_URL, VIDEOS, LOVE_LETTERS 
+    CORRECT_PASSCODE, MUSIC_URL, YOUTUBE_API_KEY, 
+    YOUTUBE_PLAYLIST_ID, LOVE_LETTERS 
 } from './config.js';
 
 /* =============================================================
@@ -26,7 +27,9 @@ const State = {
     memMatched:    0,
     memInitDone:   false,
     pinnedPhotos:  JSON.parse(localStorage.getItem('pinned_photos') || '[]'),
+    ytNextPageToken: null,
 };
+
 
 // ================================================================
 // 1. SUPABASE INIT (Safe initialization)
@@ -686,32 +689,104 @@ function showToast(msg, type = 'info') {
 }
 
 // ================================================================
-// 9. VIDEOS VIEW  — YouTube embeds from config.js VIDEOS array
+// 9. VIDEOS VIEW  — YouTube Data API Integration
 // ================================================================
-function renderVideosView() {
-    const html = VIDEOS.map(v => `
-        <div class="video-card">
-            <p class="video-card__title">
-                <i class="fab fa-youtube" aria-hidden="true"></i>${v.title}
-            </p>
-            <div class="video-embed">
-                <iframe
-                    src="https://www.youtube.com/embed/${v.id}?rel=0&playsinline=1&modestbranding=1"
-                    title="${v.title}"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen
-                    loading="lazy">
-                </iframe>
-            </div>
-        </div>`).join('');
-
+async function renderVideosView() {
+    State.ytNextPageToken = null; // Reset pagination
+    
     elContentArea.innerHTML = `
         <div class="section-wrap view-enter">
             <h2 class="section-title">Our Stories</h2>
             <p class="section-subtitle">Moments captured in motion</p>
-            <div class="videos-list">${html || '<p style="text-align:center;opacity:.4">No videos yet.</p>'}</div>
+            
+            <div id="videos-loader" class="video-loader">
+                <i class="fas fa-circle-notch fa-spin"></i> Fetching playlist…
+            </div>
+
+            <div class="videos-list" id="videos-list"></div>
+            
+            <button id="load-more-videos" class="load-more-btn" style="display: none;">
+                Load More ✨
+            </button>
         </div>`;
+
+    await fetchYouTubeVideos();
+
+    const loadMoreBtn = document.getElementById('load-more-videos');
+    if (loadMoreBtn) {
+        loadMoreBtn.onclick = async () => {
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading…';
+            await fetchYouTubeVideos();
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.innerHTML = 'Load More ✨';
+        };
+    }
 }
+
+async function fetchYouTubeVideos() {
+    const listContainer = document.getElementById('videos-list');
+    const loader        = document.getElementById('videos-loader');
+    const loadMoreBtn   = document.getElementById('load-more-videos');
+    
+    if (!YOUTUBE_API_KEY || !YOUTUBE_PLAYLIST_ID) {
+        if (loader) loader.innerHTML = `<p style="color:var(--red)">⚠️ YouTube API key or Playlist ID missing.</p>`;
+        return;
+    }
+
+    try {
+        let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=6&playlistId=${YOUTUBE_PLAYLIST_ID}&key=${YOUTUBE_API_KEY}`;
+        if (State.ytNextPageToken) url += `&pageToken=${State.ytNextPageToken}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) throw new Error(data.error.message);
+
+        if (loader) loader.style.display = 'none';
+
+        const items = data.items || [];
+        if (items.length === 0 && !State.ytNextPageToken) {
+            if (listContainer) listContainer.innerHTML = '<p style="text-align:center;opacity:.4">No videos found in this playlist.</p>';
+            return;
+        }
+
+        const html = items.map(item => {
+            const vidId = item.snippet.resourceId.videoId;
+            const title = item.snippet.title;
+            
+            return `
+                <div class="video-card">
+                    <p class="video-card__title">
+                        <i class="fab fa-youtube"></i> ${escHtml(title)}
+                    </p>
+                    <div class="video-embed">
+                        <iframe
+                            src="https://www.youtube.com/embed/${vidId}?rel=0&playsinline=1&modestbranding=1"
+                            title="${escHtml(title)}"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen
+                            loading="lazy">
+                        </iframe>
+                    </div>
+                </div>`;
+        }).join('');
+
+        if (listContainer) {
+            listContainer.insertAdjacentHTML('beforeend', html);
+        }
+
+        State.ytNextPageToken = data.nextPageToken || null;
+        if (loadMoreBtn) {
+            loadMoreBtn.style.display = State.ytNextPageToken ? 'block' : 'none';
+        }
+
+    } catch (err) {
+        console.error('YouTube Fetch Error:', err);
+        if (loader) loader.innerHTML = `<p style="color:var(--red)">⚠️ Error loading videos: ${err.message}</p>`;
+    }
+}
+
 
 // ================================================================
 // 10. LETTERS VIEW
