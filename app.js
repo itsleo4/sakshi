@@ -278,6 +278,10 @@ function successUnlock() {
         elMainApp.classList.add('visible');
         elMainApp.removeAttribute('aria-hidden');
         elFooter.classList.add('visible');
+        
+        // Fix: Explicitly initialize the layout state so the button isn't blocked
+        navigateTo('hero');
+
         gsap.from(elHeroSection, { opacity: 0, y: 24, duration: 0.9 });
     }, 800);
 }
@@ -845,14 +849,27 @@ elLetterModal.addEventListener('click', (e) => {
 // 12. BIRTHDAY CAKE & CONFETTI
 // ================================================================
 let cakeSound;
+let cheersMuted = false;
 
 function initCakeLogic() {
     cakeSound = new Audio(CHEERS_URL);
     cakeSound.preload = 'auto';
 
+    // Mute Button Logic
+    const cheersMuteBtn = document.getElementById('cheers-mute-toggle');
+    if (cheersMuteBtn) {
+        cheersMuteBtn.addEventListener('click', () => {
+            cheersMuted = !cheersMuted;
+            cakeSound.muted = cheersMuted;
+            cheersMuteBtn.classList.toggle('muted', cheersMuted);
+            cheersMuteBtn.innerHTML = cheersMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+        });
+    }
+
     function onStartTap(e) {
         // 1. INSTANT UI UPDATE
         elCakeTrigger.classList.add('hidden');
+        if (cheersMuteBtn) cheersMuteBtn.style.display = 'none'; // Hide mute btn when tapped
         elCakeDisplay.classList.remove('hidden');
         elCakeDisplay.classList.add('fade-in');
 

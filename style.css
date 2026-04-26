@@ -428,6 +428,23 @@ body.sidebar-open { overflow: hidden; }
     50%       { box-shadow: 0 0 40px var(--gold-glow), 0 0 60px rgba(255,215,0,0.2); }
 }
 
+.mini-mute-btn {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--gold);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+.mini-mute-btn:active { transform: scale(0.9); }
+.mini-mute-btn.muted { color: rgba(255,255,255,0.4); }
+
 .cake-display {
     max-width: 280px;
     margin: 0 auto 1.5rem;
