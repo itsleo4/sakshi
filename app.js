@@ -770,48 +770,52 @@ elLetterModal.addEventListener('click', (e) => {
 // ================================================================
 
 function initCakeLogic() {
-    // Step 1: Initial Tap
-    function onStartTap(e) {
-        if (e.type === 'touchstart') e.preventDefault();
-        elCakeTrigger.classList.add('hidden');
-        elCakeDisplay.classList.remove('hidden');
-        elCakeDisplay.classList.add('fade-in');
-    }
-
-    elBtnTapStart.addEventListener('click', onStartTap);
-    elBtnTapStart.addEventListener('touchstart', onStartTap, { passive: false });
-
-    // Step 2: Cake Tap
     let cakeTapped = false;
-    function onCakeTap(e) {
+    
+    function onStartTap(e) {
         if (cakeTapped) return;
         if (e.type === 'touchstart') e.preventDefault();
         cakeTapped = true;
 
-        // Play Sound
+        // 1. Hide Button, Show Cake GIF
+        elCakeTrigger.classList.add('hidden');
+        elCakeDisplay.classList.remove('hidden');
+        elCakeDisplay.classList.add('fade-in');
+
+        // 2. Play Sound
         const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
         popSound.volume = 0.5;
         popSound.play().catch(() => {});
 
-        // Popper Animation
+        // 3. Popper Animation
         launchConfetti();
         
-        // Show Wish
+        // 4. Show Wish
         elBdayWish.classList.remove('hidden');
         elBdayWish.classList.add('fade-in');
 
-        // Step 3: Hide Wish after 5 seconds
+        // 5. Hide Wish after 5 seconds
         setTimeout(() => {
             elBdayWish.classList.remove('fade-in');
             elBdayWish.classList.add('fade-out');
             setTimeout(() => {
                 elBdayWish.classList.add('hidden');
                 elBdayWish.classList.remove('fade-out');
-                cakeTapped = false; // Allow re-tap for more poppers!
             }, 800);
         }, 5000);
     }
 
+    elBtnTapStart.addEventListener('click', onStartTap);
+    elBtnTapStart.addEventListener('touchstart', onStartTap, { passive: false });
+    
+    // Make cake tappable again for more poppers!
+    function onCakeTap(e) {
+        if (e.type === 'touchstart') e.preventDefault();
+        const popSound = new Audio('https://cdn.pixabay.com/audio/2022/01/18/audio_82c611f71a.mp3');
+        popSound.volume = 0.5;
+        popSound.play().catch(() => {});
+        launchConfetti();
+    }
     elCakeGifBtn.addEventListener('click', onCakeTap);
     elCakeGifBtn.addEventListener('touchstart', onCakeTap, { passive: false });
 }
