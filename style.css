@@ -192,6 +192,172 @@ img { display: block; max-width: 100%; }
 .shake { animation: shake 0.45s ease; }
 
 /* ────────────────────────────────────────────────────────────
+   4b. SIGN IN OVERLAY (SUPABASE AUTH)
+──────────────────────────────────────────────────────────── */
+.signin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-gate);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #2a114f, #0d061c);
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.signin-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.signin-screen {
+    width: 100%;
+    height: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 2rem;
+    position: relative;
+}
+
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 2rem;
+    color: white;
+}
+.status-icons {
+    display: flex;
+    gap: 6px;
+    font-size: 0.8rem;
+}
+
+.signin-header {
+    display: flex;
+    margin-bottom: 3rem;
+}
+.back-btn {
+    color: white;
+    font-size: 1.2rem;
+    padding: 0.5rem;
+    margin-left: -0.5rem;
+    transition: opacity 0.2s;
+}
+.back-btn:active {
+    opacity: 0.5;
+}
+
+.signin-title {
+    font-family: var(--font-body);
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: white;
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.signin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.input-group label {
+    font-size: 0.9rem;
+    color: white;
+    font-weight: 500;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    padding: 0 1rem;
+    height: 56px;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.input-wrapper:focus-within {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.input-icon {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 1.1rem;
+    margin-right: 1rem;
+}
+
+.input-wrapper input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    font-family: var(--font-body);
+    outline: none;
+    width: 100%;
+}
+.input-wrapper input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.toggle-password {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 1.1rem;
+    padding: 0.5rem;
+    margin-right: -0.5rem;
+    transition: color 0.2s;
+}
+.toggle-password:active {
+    color: white;
+}
+
+.signin-submit-btn {
+    background: linear-gradient(90deg, #8a2be2, #4169e1);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    height: 56px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    transition: transform 0.2s, opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.signin-submit-btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+}
+.signin-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.signin-error {
+    color: var(--red);
+    text-align: center;
+    font-size: 0.85rem;
+    margin-top: -0.5rem;
+}
+
+
+/* ────────────────────────────────────────────────────────────
    5. BIRTHDAY REVEAL
 ──────────────────────────────────────────────────────────── */
 #birthday-reveal {
@@ -411,21 +577,23 @@ body.sidebar-open { overflow: hidden; }
     margin-bottom: 2rem;
 }
 .btn-tap-start {
-    background: linear-gradient(135deg, var(--gold), #ffcc00);
-    color: var(--bg);
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    color: white;
     padding: 1.2rem 2.2rem;
     border-radius: 50px;
     font-size: 1.1rem;
     font-weight: 600;
-    box-shadow: 0 0 30px var(--gold-glow);
+    box-shadow: 0 0 30px rgba(255, 136, 221, 0.4);
     transition: transform 0.2s, box-shadow 0.2s;
-    animation: pulse-glow 2s infinite;
+    animation: pulse-glow-purple 2s infinite;
+    border: none;
+    cursor: pointer;
 }
 .btn-tap-start:active { transform: scale(0.92); }
 
-@keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px var(--gold-glow); }
-    50%       { box-shadow: 0 0 40px var(--gold-glow), 0 0 60px rgba(255,215,0,0.2); }
+@keyframes pulse-glow-purple {
+    0%, 100% { box-shadow: 0 0 20px rgba(255, 136, 221, 0.4); }
+    50%       { box-shadow: 0 0 40px rgba(0, 255, 255, 0.4), 0 0 60px rgba(255, 136, 221, 0.2); }
 }
 
 .mini-mute-btn {
@@ -880,36 +1048,298 @@ body.sidebar-open { overflow: hidden; }
 
 
 /* ────────────────────────────────────────────────────────────
-   13. LOVE LETTERS
+   13. LOVE LETTERS (NOTO STYLE)
 ──────────────────────────────────────────────────────────── */
-.letters-list {
+/* ────────────────────────────────────────────────────────────
+   13. LOVE LETTERS (ADVANCED NOTO STYLE)
+──────────────────────────────────────────────────────────── */
+.letters-view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.letters-view-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white;
+}
+
+/* Search Bar Refined */
+.search-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(10, 10, 30, 0.7);
+    backdrop-filter: blur(20px);
+    border: 2px solid transparent;
+    background-image: linear-gradient(rgba(10, 10, 30, 0.7), rgba(10, 10, 30, 0.7)), 
+                      linear-gradient(90deg, #ff7eb3, #7afcff);
+    background-origin: border-box;
+    background-clip: content-box, border-box;
+    border-radius: 14px;
+    padding: 0 1.25rem;
+    height: 52px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 10px rgba(122, 252, 255, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.search-wrapper:focus-within {
+    transform: scale(1.02);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(122, 252, 255, 0.2);
+}
+
+/* Note Cards Refined */
+.note-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(155, 81, 224, 0.15);
+    border-radius: 24px;
+    padding: 1.5rem;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    overflow: visible; /* To allow pin to pop */
+}
+
+/* Centered Pin Sign */
+.note-card.pinned::before {
+    content: '\f08d';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-15deg);
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #ff7eb3, #ff4d4d);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 10;
+    pointer-events: none; /* Crucial: clicks pass through to dots */
+}
+
+/* Theme Colors for Cards */
+.note-card.color-yellow { 
+    background: rgba(255, 215, 0, 0.08); 
+    border-color: rgba(255, 215, 0, 0.3); 
+    box-shadow: 0 8px 32px rgba(255, 215, 0, 0.05);
+}
+.note-card.color-yellow .note-card__title { color: #ffd700; }
+
+.note-card.color-blue { 
+    background: rgba(65, 105, 225, 0.08); 
+    border-color: rgba(65, 105, 225, 0.3); 
+    box-shadow: 0 8px 32px rgba(65, 105, 225, 0.05);
+}
+.note-card.color-blue .note-card__title { color: #7afcff; }
+
+.note-card.color-pink { 
+    background: rgba(255, 126, 179, 0.08); 
+    border-color: rgba(255, 126, 179, 0.3); 
+    box-shadow: 0 8px 32px rgba(255, 126, 179, 0.05);
+}
+.note-card.color-pink .note-card__title { color: #ff7eb3; }
+
+/* Default / Old UI Style */
+.note-card.color-default {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(155, 81, 224, 0.15);
+}
+
+/* FAB Positioning & Animation */
+.add-note-fab {
+    position: fixed;
+    bottom: 2.5rem;
+    right: 1.5rem; /* Thumb side */
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #ff7eb3, #7afcff);
+    border-radius: 20px; /* Slightly squarish like Noto */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-size: 1.8rem;
+    box-shadow: 0 10px 30px rgba(122, 252, 255, 0.3);
+    cursor: pointer;
+    z-index: 1000;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease, visibility 0.3s;
+}
+
+.add-note-fab.scrolling {
+    transform: scale(0.5) translateY(50px);
+    opacity: 0;
+    visibility: hidden;
+}
+
+.add-note-fab:active {
+    transform: scale(0.9);
+}
+
+/* Note Editor Modal */
+.note-editor-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: var(--bg);
     display: flex;
     flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.note-editor-modal.visible {
+    transform: translateY(0);
+}
+
+.note-editor-header {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.editor-icon-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+.editor-icon-btn:active { background: rgba(255,255,255,0.1); }
+.editor-icon-btn.active { color: var(--gold); }
+
+.editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.editor-save-btn {
+    background: linear-gradient(90deg, #ff7eb3, #7afcff);
+    color: #000;
+    border: none;
+    padding: 0.6rem 1.5rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 15px rgba(122, 252, 255, 0.2);
+}
+
+.note-editor-content {
+    flex: 1;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.note-edit-title {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    outline: none;
+    font-family: var(--font-body);
+}
+
+.note-edit-body {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.15rem;
+    line-height: 1.8;
+    flex: 1;
+    resize: none;
+    outline: none;
+    font-family: var(--font-body);
+}
+
+.note-editor-footer {
+    padding: 1rem;
+    background: rgba(0,0,0,0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.editor-footer-info {
+    display: flex;
+    align-items: center;
     gap: 1.5rem;
 }
 
-.envelope {
-    background: linear-gradient(135deg, #fffdf5, #fff8e7);
-    border-radius: 16px 16px 14px 14px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.55);
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.3s ease;
+.note-edit-date {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
 }
-.envelope:active { transform: scale(0.985); }
 
-.envelope__flap {
-    width: 100%;
-    height: 55px;
-    background: linear-gradient(135deg, #ffe082, #ffc107);
-    clip-path: polygon(0 0, 50% 100%, 100% 0);
-    transform-origin: top center;
-    transition: transform 0.6s cubic-bezier(0.4,0,0.2,1);
-    will-change: transform;
+/* Popovers / Floating Menus */
+.note-context-menu, .note-options-menu, .global-settings-menu {
+    position: fixed;
+    z-index: 3000;
+    background: #151525;
+    border: 1px solid rgba(155, 81, 224, 0.2);
+    border-radius: 18px;
+    padding: 0.6rem;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    min-width: 200px;
 }
-.envelope.open .envelope__flap {
-    transform: rotateX(180deg);
+
+.context-menu-item, .options-item, .settings-item {
+    padding: 0.85rem 1.1rem;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
 }
+.context-menu-item:active, .options-item:active, .settings-item:active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.options-colors {
+    display: flex;
+    justify-content: space-around;
+    padding: 0.85rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.color-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    transition: transform 0.2s;
+}
+.color-dot:active { transform: scale(1.2); }
+.color-dot.active { border-color: white; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+.color-dot.default { background: #333; }
+.color-dot.yellow { background: #ffd700; }
+.color-dot.blue { background: #4169e1; }
+.color-dot.pink { background: #ff7eb3; }
+
+.options-item.delete { color: #ff6b6b; font-weight: 600; }
 
 /* Letter Modal Styles */
 .letter-modal {

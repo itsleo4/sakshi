@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ================================================================
 const State = {
     loggedIn:      false,
+    sbLoggedIn:    false, // Added Supabase login state
     currentView:   'hero',
     musicOn:       false,
     starsOn:       true,
@@ -28,6 +29,16 @@ const State = {
     memInitDone:   false,
     pinnedPhotos:  JSON.parse(localStorage.getItem('pinned_photos') || '[]'),
     ytNextPageToken: null,
+    notes: JSON.parse(localStorage.getItem('love_notes')) || LOVE_LETTERS.map(l => ({
+        id: Math.random().toString(36).substr(2, 9),
+        title: l.title,
+        content: l.content,
+        is_pinned: false,
+        is_poem: !!l.isPoem,
+        color: 'default',
+        created_at: new Date().toISOString()
+    })),
+    activeNote: null
 };
 
 
@@ -70,10 +81,28 @@ const elBtnTapStart   = document.getElementById('btn-tap-start');
 const elCakeDisplay   = document.getElementById('cake-display');
 const elCakeGifBtn    = document.getElementById('cake-gif-btn');
 const elBdayWish      = document.getElementById('bday-wish');
-const elLetterModal   = document.getElementById('letter-modal');
-const elModalTitle    = document.getElementById('modal-letter-title');
-const elModalBody     = document.getElementById('modal-letter-body');
-const elLetterClose   = document.getElementById('letter-close');
+const elNoteEditorModal = document.getElementById('note-editor-modal');
+const elNoteEditTitle   = document.getElementById('note-edit-title');
+const elNoteEditBody    = document.getElementById('note-edit-body');
+const elNoteEditDate    = document.getElementById('note-edit-date');
+const elNoteSaveBtn    = document.getElementById('note-editor-save');
+const elNoteBackBtn    = document.getElementById('note-editor-back');
+const elNotePinBtn     = document.getElementById('note-editor-pin');
+const elNoteOptionsBtn = document.getElementById('note-editor-options');
+const elNoteContextMenu = document.getElementById('note-context-menu');
+const elNoteOptionsMenu = document.getElementById('note-options-menu');
+const elGlobalSettingsMenu = document.getElementById('global-settings-menu');
+
+// Supabase Sign In References
+const elSigninOverlay = document.getElementById('signin-overlay');
+const elSigninForm    = document.getElementById('signin-form');
+const elSigninEmail   = document.getElementById('signin-email');
+const elSigninPass    = document.getElementById('signin-password');
+const elSigninError   = document.getElementById('signin-error');
+const elSigninBack    = document.getElementById('signin-back-btn');
+const elSigninSubmit  = document.getElementById('signin-submit-btn');
+const elPassToggle    = document.getElementById('toggle-password-btn');
+const elPassIcon      = document.getElementById('toggle-password-icon');
 
 // ================================================================
 // 4. THREE.JS — Black Hole
@@ -334,6 +363,13 @@ function navigateTo(view) {
     // Update active nav button
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
 
+    // Restricted views
+    const restricted = ['photos', 'videos', 'letters'];
+    if (restricted.includes(view) && !State.sbLoggedIn) {
+        openSignin(view);
+        return;
+    }
+
     // Toggle hero visibility
     const isHero = view === 'hero';
     elHeroSection.style.display = isHero ? 'flex' : 'none';
@@ -359,12 +395,82 @@ function navigateTo(view) {
     if (renderers[view]) renderers[view]();
 }
 
+// ================================================================
+// 7b. SUPABASE SIGN IN LOGIC
+// ================================================================
+let pendingView = null;
+
+function openSignin(view) {
+    pendingView = view;
+    elSigninOverlay.classList.remove('hidden');
+    elSigninError.classList.add('hidden');
+    elSigninEmail.value = '';
+    elSigninPass.value = '';
+}
+
+function closeSignin() {
+    elSigninOverlay.classList.add('hidden');
+    pendingView = null;
+}
+
+elSigninBack.addEventListener('click', closeSignin);
+
+elPassToggle.addEventListener('click', () => {
+    const isPass = elSigninPass.type === 'password';
+    elSigninPass.type = isPass ? 'text' : 'password';
+    elPassIcon.className = isPass ? 'fas fa-eye' : 'fas fa-eye-slash';
+});
+
+elSigninForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = elSigninEmail.value.trim();
+    const password = elSigninPass.value.trim();
+
+    // UI Feedback
+    elSigninSubmit.disabled = true;
+    elSigninSubmit.querySelector('.btn-loader').classList.remove('hidden');
+    elSigninError.classList.add('hidden');
+
+    try {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        
+        if (error) throw error;
+
+        // Success
+        State.sbLoggedIn = true;
+        closeSignin();
+        await fetchNotes(); // Fetch DB notes on login
+        if (pendingView) navigateTo(pendingView);
+        
+    } catch (err) {
+        console.error('Login failed:', err);
+        elSigninError.textContent = 'Invalid credentials. Please try again.';
+        elSigninError.classList.remove('hidden');
+        if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+    } finally {
+        elSigninSubmit.disabled = false;
+        elSigninSubmit.querySelector('.btn-loader').classList.add('hidden');
+    }
+});
+
 // Logout button
 document.getElementById('logout-btn').addEventListener('click', logout);
 
-function logout() {
+async function logout() {
     if (!confirm('Lock the site and return to the passcode screen?')) return;
+    
+    // Reset States
     State.loggedIn = false;
+    State.sbLoggedIn = false;
+    State.notes = []; 
+
+    // Supabase Sign Out
+    if (sb) await sb.auth.signOut();
+
+    // Reset Hero UI for next login
+    if (elCakeTrigger) elCakeTrigger.classList.remove('hidden');
+    if (elCakeDisplay) elCakeDisplay.classList.add('hidden');
+    if (elBdayWish) elBdayWish.classList.add('hidden');
 
     elAudio.pause();
     State.musicOn = false;
@@ -377,6 +483,9 @@ function logout() {
 
     passBuffer = '';
     updatePassDisplay();
+    
+    // Return to hero view internally so restricted sections reset
+    State.currentView = 'hero';
 }
 
 // ================================================================
@@ -825,43 +934,286 @@ async function fetchYouTubeVideos() {
 // ================================================================
 // 10. LETTERS VIEW
 // ================================================================
+async function fetchNotes() {
+    if (!sb) return;
+    try {
+        const { data, error } = await sb.from('love_letters').select('*').order('is_pinned', { ascending: false }).order('created_at', { ascending: false });
+        if (error) throw error;
+        State.notes = data || [];
+        localStorage.setItem('love_notes', JSON.stringify(State.notes));
+    } catch (err) {
+        console.error('Failed to fetch notes:', err);
+    }
+}
+
 function renderLettersView() {
-    const envelopesArr = LOVE_LETTERS.map((letter, i) => `
-        <div class="envelope" data-letter="${i}" role="button" aria-label="Open letter ${i+1}" tabindex="0">
-            <div class="envelope__flap"></div>
-            <div class="envelope__body">
-                <p class="letter__number">Letter ${toRoman(i + 1)}</p>
-                <h3 class="letter__title">${escHtml(letter.title)}</h3>
-                <p class="envelope__hint">tap to read</p>
+    const renderNotes = (filter = '') => {
+        const filtered = State.notes.filter(n => 
+            n.title.toLowerCase().includes(filter.toLowerCase()) || 
+            n.content.toLowerCase().includes(filter.toLowerCase())
+        );
+
+        if (filtered.length === 0) {
+            return `<div class="notes-empty">No notes found</div>`;
+        }
+
+        return filtered.map(note => `
+            <div class="note-card ${note.is_pinned ? 'pinned' : ''} color-${note.color || 'default'}" data-id="${note.id}">
+                <div class="note-card__header">
+                    <h3 class="note-card__title">${escHtml(note.title || 'Untitled')}</h3>
+                    <i class="fas fa-ellipsis-v note-card__dots" data-id="${note.id}"></i>
+                </div>
+                <div class="note-card__body">
+                    ${escHtml(note.content)}
+                </div>
+                <div class="note-card__footer">
+                    <span class="note-card__date">${new Date(note.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
+                </div>
             </div>
-        </div>`).join('');
+        `).join('');
+    };
 
     elContentArea.innerHTML = `
         <div class="section-wrap view-enter">
-            <h2 class="section-title">Love Letters</h2>
-            <p class="section-subtitle">Heartfelt notes just for you</p>
-            <div class="letters-list">${envelopesArr}</div>
-        </div>`;
-
-    // Open modal on click
-    elContentArea.querySelectorAll('.envelope').forEach(env => {
-        function open(e) {
-            if (e.type === 'touchend') e.preventDefault();
-            const i = env.dataset.letter;
-            const letter = LOVE_LETTERS[i];
+            <div class="letters-view-header">
+                <h2 class="letters-view-title">Noto</h2>
+                <button class="editor-icon-btn" id="global-settings-btn"><i class="fas fa-ellipsis-v"></i></button>
+            </div>
             
-            elModalTitle.textContent = letter.title;
-            elModalBody.textContent = letter.content;
-            if (letter.isPoem) elModalBody.classList.add('letter__text--poem');
-            else elModalBody.classList.remove('letter__text--poem');
+            <div class="letters-header">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="letters-search" placeholder="Search notes..." autocomplete="off">
+                </div>
+            </div>
+            
+            <div id="notes-list" class="letters-container">
+                ${renderNotes()}
+            </div>
 
-            elLetterModal.classList.add('visible');
-            elLetterModal.setAttribute('aria-hidden', 'false');
-        }
-        env.addEventListener('click',    open);
-        env.addEventListener('touchend', open, { passive: false });
+            <div class="add-note-fab" id="add-note-btn">
+                <i class="fas fa-plus"></i>
+            </div>
+        </div>
+    `;
+
+    const searchInput = document.getElementById('letters-search');
+    const notesList = document.getElementById('notes-list');
+    const settingsBtn = document.getElementById('global-settings-btn');
+    const fab = document.getElementById('add-note-btn');
+
+    // FAB scroll behavior
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+        if (State.currentView !== 'letters') return;
+        fab.classList.add('scrolling');
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            fab.classList.remove('scrolling');
+        }, 150);
+    }, { passive: true });
+
+    searchInput.addEventListener('input', (e) => {
+        notesList.innerHTML = renderNotes(e.target.value);
+        bindNoteEvents();
     });
+
+    fab.addEventListener('click', () => openNoteEditor());
+
+    settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const rect = settingsBtn.getBoundingClientRect();
+        elGlobalSettingsMenu.style.top = `${rect.bottom + 10}px`;
+        elGlobalSettingsMenu.style.right = `${window.innerWidth - rect.right}px`;
+        elGlobalSettingsMenu.classList.remove('hidden');
+    });
+
+    function bindNoteEvents() {
+        document.querySelectorAll('.note-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.classList.contains('note-card__dots')) return;
+                openNoteEditor(card.dataset.id);
+            });
+
+            const dots = card.querySelector('.note-card__dots');
+            dots.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const rect = dots.getBoundingClientRect();
+                State.activeNote = State.notes.find(n => n.id === dots.dataset.id);
+                elNoteContextMenu.style.top = `${rect.bottom + 5}px`;
+                elNoteContextMenu.style.left = `${rect.left - 150}px`;
+                elNoteContextMenu.classList.remove('hidden');
+            });
+        });
+    }
+
+    bindNoteEvents();
 }
+
+// --- Note Editor Logic ---
+function openNoteEditor(noteId = null) {
+    if (noteId) {
+        State.activeNote = { ...State.notes.find(n => n.id === noteId) };
+        elNoteEditTitle.value = State.activeNote.title;
+        elNoteEditBody.value = State.activeNote.content;
+        elNoteEditDate.textContent = `Edited ${new Date(State.activeNote.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`;
+        elNotePinBtn.classList.toggle('active', State.activeNote.is_pinned);
+    } else {
+        State.activeNote = { 
+            id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9), 
+            title: '', content: '', is_pinned: false, is_poem: false, color: 'default',
+            created_at: new Date().toISOString()
+        };
+        elNoteEditTitle.value = '';
+        elNoteEditBody.value = '';
+        elNoteEditDate.textContent = 'New Note';
+        elNotePinBtn.classList.remove('active');
+    }
+
+    // Update color dots UI
+    document.querySelectorAll('.color-dot').forEach(dot => {
+        dot.classList.toggle('active', dot.dataset.color === (State.activeNote.color || 'default'));
+    });
+    
+    elNoteEditorModal.classList.add('visible');
+    elNoteEditorModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeNoteEditor() {
+    elNoteEditorModal.classList.remove('visible');
+    elNoteEditorModal.setAttribute('aria-hidden', 'true');
+    State.activeNote = null;
+    hideAllPopovers();
+}
+
+async function saveNote() {
+    const title = elNoteEditTitle.value.trim();
+    const content = elNoteEditBody.value.trim();
+    if (!title && !content) { closeNoteEditor(); return; }
+
+    const updatedNote = {
+        ...State.activeNote,
+        title: title || 'Untitled',
+        content,
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        if (sb) {
+            const { error } = await sb.from('love_letters').upsert(updatedNote);
+            if (error) throw error;
+        }
+        
+        await fetchNotes(); // Refresh from DB
+        renderLettersView();
+        closeNoteEditor();
+        launchConfetti();
+    } catch (err) {
+        console.error('Failed to save note:', err);
+        alert('Cosmic error: Could not save note to the stars.');
+    }
+}
+
+async function deleteNote(noteId) {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    try {
+        if (sb) {
+            const { error } = await sb.from('love_letters').delete().eq('id', noteId);
+            if (error) throw error;
+        }
+        await fetchNotes();
+        renderLettersView();
+        closeNoteEditor();
+    } catch (err) {
+        console.error('Failed to delete note:', err);
+    }
+}
+
+async function togglePin(noteId) {
+    const note = State.notes.find(n => n.id === noteId);
+    if (note) {
+        const newState = !note.is_pinned;
+        try {
+            if (sb) {
+                const { error } = await sb.from('love_letters').update({ is_pinned: newState }).eq('id', noteId);
+                if (error) throw error;
+            }
+            await fetchNotes();
+            renderLettersView();
+            if (State.activeNote && State.activeNote.id === noteId) {
+                elNotePinBtn.classList.toggle('active', newState);
+            }
+        } catch (err) {
+            console.error('Failed to pin note:', err);
+        }
+    }
+}
+
+function hideAllPopovers() {
+    elNoteContextMenu.classList.add('hidden');
+    elNoteOptionsMenu.classList.add('hidden');
+    elGlobalSettingsMenu.classList.add('hidden');
+}
+
+// --- Editor Listeners ---
+elNoteBackBtn.addEventListener('click', closeNoteEditor);
+elNoteSaveBtn.addEventListener('click', saveNote);
+elNotePinBtn.addEventListener('click', () => togglePin(State.activeNote.id));
+elNoteOptionsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const rect = elNoteOptionsBtn.getBoundingClientRect();
+    elNoteOptionsMenu.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+    elNoteOptionsMenu.style.left = `${rect.left}px`;
+    elNoteOptionsMenu.classList.remove('hidden');
+});
+
+// Context Menu Actions
+document.getElementById('ctx-pin').addEventListener('click', () => {
+    togglePin(State.activeNote.id);
+    hideAllPopovers();
+});
+document.getElementById('ctx-delete').addEventListener('click', () => {
+    deleteNote(State.activeNote.id);
+    hideAllPopovers();
+});
+
+// Option Menu Actions
+document.getElementById('opt-delete').addEventListener('click', () => {
+    deleteNote(State.activeNote.id);
+    hideAllPopovers();
+});
+
+document.querySelectorAll('.color-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+        const color = dot.dataset.color;
+        State.activeNote.color = color;
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.toggle('active', d === dot));
+    });
+});
+
+document.querySelectorAll('.color-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+        const color = dot.dataset.color;
+        State.activeNote.color = color;
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.toggle('active', d === dot));
+    });
+});
+
+// Global Settings Actions
+document.getElementById('set-theme').addEventListener('click', () => {
+    alert("Cosmic theme is active! More themes coming soon.");
+    hideAllPopovers();
+});
+
+document.getElementById('set-saved').addEventListener('click', async () => {
+    await fetchNotes();
+    renderLettersView();
+    alert("Notes synced with cosmic database.");
+    hideAllPopovers();
+});
+
+// Close popovers on body click
+document.body.addEventListener('click', () => hideAllPopovers());
 
 // Close Letter Modal
 elLetterClose.addEventListener('click', () => {
@@ -882,96 +1234,102 @@ let cakeSound;
 let cheersMuted = false;
 
 function initCakeLogic() {
-    cakeSound = new Audio(CHEERS_URL);
-    cakeSound.preload = 'auto';
-
-    // Mute Button Logic
-    const cheersMuteBtn = document.getElementById('cheers-mute-toggle');
-    if (cheersMuteBtn) {
-        cheersMuteBtn.addEventListener('click', () => {
-            cheersMuted = !cheersMuted;
-            cakeSound.muted = cheersMuted;
-            cheersMuteBtn.classList.toggle('muted', cheersMuted);
-            cheersMuteBtn.innerHTML = cheersMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
-        });
+    console.log("Initializing Cosmic Cake Logic...");
+    
+    // 1. Setup Audio with Fallback
+    try {
+        cakeSound = new Audio(CHEERS_URL);
+        cakeSound.preload = 'auto';
+        cakeSound.crossOrigin = 'anonymous'; // Help with some browser CORS issues
+    } catch (e) {
+        console.error("Audio init failed:", e);
     }
 
-    function onStartTap(e) {
-        // 1. INSTANT UI UPDATE
-        elCakeTrigger.classList.add('hidden');
-        // Kept mute button visible per user request
-        elCakeDisplay.classList.remove('hidden');
-        elCakeDisplay.classList.add('fade-in');
+    // 2. Mute Toggle (Ensuring it's responsive)
+    const muteBtn = document.getElementById('cheers-mute-toggle');
+    if (muteBtn) {
+        const toggleMute = (e) => {
+            e.stopPropagation();
+            cheersMuted = !cheersMuted;
+            if (cakeSound) cakeSound.muted = cheersMuted;
+            muteBtn.classList.toggle('muted', cheersMuted);
+            muteBtn.innerHTML = cheersMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+            console.log("Cheers muted:", cheersMuted);
+        };
+        muteBtn.addEventListener('click', toggleMute);
+    }
 
-        // 2. TRIGGER HEAVY LOGIC IN NEXT FRAME (No blocking)
-        setTimeout(() => {
-            // Play Pre-cached Sound (Cheers)
+    // 3. Main Surprise Trigger
+    async function onStartTap(e) {
+        console.log("Surprise button tapped!");
+        if (e && e.cancelable) e.preventDefault();
+        
+        // --- PHASE 1: UI VISIBILITY (Instant) ---
+        if (elCakeTrigger) {
+            elCakeTrigger.style.display = 'none';
+            elCakeTrigger.classList.add('hidden');
+        }
+        
+        if (elCakeDisplay) {
+            console.log("Revealing cake display...");
+            elCakeDisplay.classList.remove('hidden');
+            elCakeDisplay.style.display = 'block';
+            elCakeDisplay.style.opacity = '1';
+            elCakeDisplay.classList.add('fade-in');
+        }
+
+        // --- PHASE 2: AUDIO (Instant) ---
+        if (cakeSound) {
             try {
                 cakeSound.currentTime = 0;
-                cakeSound.volume = 1; // Play cheers at full volume
-                cakeSound.play().catch(() => {});
-                
-                // Stop the cheers after 10 seconds
-                setTimeout(() => {
-                    cakeSound.pause();
-                    cakeSound.currentTime = 0;
-                }, 10000);
-            } catch (err) {}
+                cakeSound.play().then(() => {
+                    console.log("Cheers playing...");
+                }).catch(err => {
+                    console.warn("Audio play blocked/failed:", err);
+                });
+            } catch (err) {
+                console.error("Cake sound error:", err);
+            }
+        }
 
-            // Start Melody Continuous Music
-            try {
-                State.musicOn = true;
-                const musicBtn = document.getElementById('music-toggle');
-                if (musicBtn) {
-                    musicBtn.classList.add('on');
-                    musicBtn.setAttribute('aria-pressed', 'true');
-                }
-                if (!elAudio.src || elAudio.src === window.location.href) {
-                    elAudio.src = MUSIC_URL;
-                }
-                elAudio.volume = 0.5; // Slightly lower volume for backend melody
-                elAudio.play().catch(() => {});
-            } catch (err) {}
+        // Start background melody if it wasn't already
+        if (!State.musicOn) {
+            State.musicOn = true;
+            if (!elAudio.src || elAudio.src === window.location.href) elAudio.src = MUSIC_URL;
+            elAudio.play().catch(() => {});
+        }
 
-            // Popper Animation
-            try { launchConfetti(); } catch (err) {}
-            
-            // Show Wish
+        // --- PHASE 3: EFFECTS ---
+        launchConfetti();
+
+        // Reveal Wish
+        setTimeout(() => {
             if (elBdayWish) {
                 elBdayWish.classList.remove('hidden');
+                elBdayWish.style.display = 'block';
                 elBdayWish.classList.add('fade-in');
-
-                setTimeout(() => {
-                    elBdayWish.classList.remove('fade-in');
-                    elBdayWish.classList.add('fade-out');
-                    setTimeout(() => {
-                        elBdayWish.classList.add('hidden');
-                        elBdayWish.classList.remove('fade-out');
-                    }, 800);
-                }, 5000);
             }
-        }, 0);
+        }, 600);
     }
 
-    // Use both click and touchstart for responsiveness
-    elBtnTapStart.addEventListener('click', onStartTap);
-    elBtnTapStart.addEventListener('touchstart', (e) => { e.preventDefault(); onStartTap(e); }, { passive: false });
-    
-    // Make cake tappable again for more poppers!
-    function onCakeTap(e) {
-        if (e.type === 'touchstart') e.preventDefault();
-        try {
-            cakeSound.currentTime = 0;
-            cakeSound.play().catch(() => {});
-            setTimeout(() => {
-                cakeSound.pause();
-                cakeSound.currentTime = 0;
-            }, 10000);
-            launchConfetti();
-        } catch (err) {}
+    if (elBtnTapStart) {
+        elBtnTapStart.onclick = onStartTap; // Use direct property for priority
+        elBtnTapStart.addEventListener('touchstart', onStartTap, { passive: false });
     }
-    elCakeGifBtn.addEventListener('click', onCakeTap);
-    elCakeGifBtn.addEventListener('touchstart', onCakeTap, { passive: false });
+
+    // 4. Cake Re-tap
+    if (elCakeGifBtn) {
+        const reTap = (e) => {
+            console.log("Cake re-tapped!");
+            launchConfetti();
+            if (cakeSound && cakeSound.paused) {
+                cakeSound.currentTime = 0;
+                cakeSound.play().catch(() => {});
+            }
+        };
+        elCakeGifBtn.onclick = reTap;
+        elCakeGifBtn.addEventListener('touchstart', reTap, { passive: false });
+    }
 }
 function launchConfetti() {
     const colors = ['#ffccf2', '#b3e5ff', '#ffd700', '#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff4500'];
