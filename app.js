@@ -1,8 +1,8 @@
-import { 
-    SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, 
+import {
+    SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET,
     SUPABASE_PHOTO_FOLDER, SUPABASE_FEATURED_PHOTO,
-    CORRECT_PASSCODE, MUSIC_URL, CHEERS_URL, YOUTUBE_API_KEY, 
-    YOUTUBE_PLAYLIST_ID, LOVE_LETTERS 
+    CORRECT_PASSCODE, MUSIC_URL, CHEERS_URL, YOUTUBE_API_KEY,
+    YOUTUBE_PLAYLIST_ID, LOVE_LETTERS
 } from './config.js';
 
 /* =============================================================
@@ -16,15 +16,18 @@ document.addEventListener('DOMContentLoaded', () => {
 // ================================================================
 const State = {
     loggedIn:      false,
-    sbLoggedIn:    false, 
+    sbLoggedIn:    false,
     currentView:   'hero',
     musicOn:       false,
     starsOn:       true,
-    catchRAF:      null,   
+    catchRAF:      null,
     memLocked:     false,
     memMatched:    0,
     memInitDone:   false,
     pinnedPhotos:  JSON.parse(localStorage.getItem('pinned_photos') || '[]'),
+    favoritePhotos: JSON.parse(localStorage.getItem('favorite_photos') || '[]'),
+    photoList: [],
+    photoIndex: 0,
     ytNextPageToken: null,
     notes: [],
     activeNote: null
@@ -47,8 +50,8 @@ const elHeroSection     = document.getElementById('hero-section');
 const elFooter          = document.getElementById('footer');
 const elLightbox        = document.getElementById('lightbox');
 const elLbImg           = document.getElementById('lb-img');
-const elLbCaption       = document.getElementById('lb-caption');
 const elLbClose         = document.getElementById('lb-close');
+const elLbFav           = document.getElementById('lb-fav');
 const elAudio           = document.getElementById('bg-audio');
 const elBhCanvas        = document.getElementById('bh-canvas');
 const elHeroHeading     = document.getElementById('hero-heading');
@@ -261,7 +264,7 @@ function navigateTo(view) {
     }
 
     const isHero = view === 'hero';
-    
+
     if (isHero) {
         document.body.classList.add('view-hero');
     } else {
@@ -341,15 +344,49 @@ document.getElementById('logout-btn').onclick = logout;
 // ================================================================
 // 8. PHOTOS VIEW
 // ================================================================
-async function renderPhotosView() {
+async function renderPhotosView(folder = 'ALBUM') {
     elContentArea.innerHTML = `
-        <div class="section-wrap view-enter">
-            <h2 class="section-title">Photo Galaxy</h2>
-            <div class="photos-grid" id="photos-grid"></div>
-        </div>
-        <input type="file" id="photo-file-input" accept="image/*" style="display:none">
-        <button class="upload-fab" id="upload-fab"><i class="fas fa-plus"></i></button>
-        <div class="upload-toast" id="upload-toast"></div>`;
+        <div class="section-wrap view-enter photos-section-wrapper">
+            <h2 class="section-title">Illustrations</h2>
+            <div class="photos-sub">CURATED GALLERIES</div>
+
+            <div class="folder-tabs">
+                <div class="folder-tab ${folder === 'ALBUM' ? 'active' : ''}" data-folder="ALBUM">
+                    <div class="folder-thumb album-thumb"></div>
+                    <span>ALBUM</span>
+                </div>
+                <div class="folder-tab ${folder === 'Favorites' ? 'active' : ''}" data-folder="Favorites">
+                    <div class="folder-thumb fav-thumb"></div>
+                    <span>Favorites</span>
+                </div>
+            </div>
+
+            <div class="photos-masonry" id="photos-grid"></div>
+
+            <!-- Bottom Navigation / Upload -->
+            <div class="photos-bottom-nav">
+                <div class="bottom-nav-inner">
+                    <i class="fas fa-compass nav-icon"></i>
+                    <i class="fas fa-th-large nav-icon active"></i>
+                    <button class="upload-fab center-fab" id="upload-fab"><i class="fas fa-plus"></i></button>
+                    <i class="fas fa-pen nav-icon"></i>
+                    <i class="fas fa-user nav-icon"></i>
+                </div>
+            </div>
+
+            <div class="upload-toast" id="upload-toast"></div>
+            <input type="file" id="photo-file-input" accept="image/*" style="display:none">
+
+            <div id="photo-context-menu" class="note-context-menu hidden">
+                <div class="context-menu-item" id="photo-ctx-pin"><i class="fas fa-thumbtack"></i> Pin</div>
+                <div class="context-menu-item" id="photo-ctx-fav"><i class="fas fa-heart"></i> Favorite</div>
+                <div class="context-menu-item delete" id="photo-ctx-delete"><i class="fas fa-trash"></i> Delete</div>
+            </div>
+        </div>`;
+
+    document.querySelectorAll('.folder-tab').forEach(t => {
+        t.onclick = () => renderPhotosView(t.dataset.folder);
+    });
 
     const fab = document.getElementById('upload-fab');
     const input = document.getElementById('photo-file-input');
@@ -361,20 +398,114 @@ async function renderPhotosView() {
         const file = input.files[0];
         const path = `${SUPABASE_PHOTO_FOLDER}/${Date.now()}_${file.name}`;
         const { error } = await sb.storage.from(SUPABASE_BUCKET).upload(path, file);
-        if (!error) { showToast("Uploaded!", "success"); renderPhotosView(); }
+        if (!error) { showToast("Uploaded!", "success"); renderPhotosView(folder); }
     };
 
     const grid = document.getElementById('photos-grid');
     const { data } = await sb.storage.from(SUPABASE_BUCKET).list(SUPABASE_PHOTO_FOLDER);
-    (data || []).forEach(f => {
+
+    State.photoList = [];
+
+    let files = (data || []).filter(f => f.name !== '.emptyFolderPlaceholder');
+
+    // Sort: Pinned first, then by date
+    files.sort((a, b) => {
+        const pinA = State.pinnedPhotos.includes(a.name) ? 1 : 0;
+        const pinB = State.pinnedPhotos.includes(b.name) ? 1 : 0;
+        if (pinA !== pinB) return pinB - pinA;
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+
+    if (folder === 'Favorites') {
+        files = files.filter(f => State.favoritePhotos.includes(f.name));
+    }
+
+    const contextMenu = document.getElementById('photo-context-menu');
+    let activePhotoName = null;
+
+    files.forEach((f, idx) => {
         const url = sb.storage.from(SUPABASE_BUCKET).getPublicUrl(`${SUPABASE_PHOTO_FOLDER}/${f.name}`).data.publicUrl;
+        State.photoList.push({ name: f.name, url: url });
+
         const img = document.createElement('div');
-        img.className = 'photo-card';
-        img.innerHTML = `<img src="${url}" loading="lazy">`;
-        img.onclick = () => openLightbox(url, f.name);
+        img.className = 'photo-card-masonry';
+
+        const isPinned = State.pinnedPhotos.includes(f.name);
+
+        img.innerHTML = `
+            <img src="${url}" loading="lazy">
+            ${isPinned ? '<div class="photo-pin-badge"><i class="fas fa-thumbtack"></i></div>' : ''}
+            <button class="photo-dots"><i class="fas fa-ellipsis-v"></i></button>
+        `;
+
+        img.querySelector('img').onclick = () => openLightboxGallery(idx);
+
+        const dots = img.querySelector('.photo-dots');
+        dots.onclick = (e) => {
+            e.stopPropagation();
+            activePhotoName = f.name;
+            const rect = dots.getBoundingClientRect();
+
+            document.getElementById('photo-ctx-fav').innerHTML = State.favoritePhotos.includes(f.name)
+                ? '<i class="fas fa-heart-broken"></i> Unfavorite'
+                : '<i class="fas fa-heart"></i> Favorite';
+            document.getElementById('photo-ctx-pin').innerHTML = State.pinnedPhotos.includes(f.name)
+                ? '<i class="fas fa-thumbtack" style="opacity:0.5"></i> Unpin'
+                : '<i class="fas fa-thumbtack"></i> Pin';
+
+            contextMenu.style.top = `${rect.bottom + 5}px`;
+            contextMenu.style.left = `${rect.left - 120}px`;
+            contextMenu.classList.remove('hidden');
+        };
+
         grid.appendChild(img);
     });
+
+    // Hide context menu globally
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.photo-dots') && !e.target.closest('#photo-context-menu')) {
+            contextMenu?.classList.add('hidden');
+        }
+    }, { once: false });
+
+    document.getElementById('photo-ctx-fav').onclick = () => {
+        if (!activePhotoName) return;
+        if (State.favoritePhotos.includes(activePhotoName)) {
+            State.favoritePhotos = State.favoritePhotos.filter(n => n !== activePhotoName);
+        } else {
+            State.favoritePhotos.push(activePhotoName);
+        }
+        localStorage.setItem('favorite_photos', JSON.stringify(State.favoritePhotos));
+        contextMenu.classList.add('hidden');
+        renderPhotosView(folder);
+    };
+
+    document.getElementById('photo-ctx-pin').onclick = () => {
+        if (!activePhotoName) return;
+        if (State.pinnedPhotos.includes(activePhotoName)) {
+            State.pinnedPhotos = State.pinnedPhotos.filter(n => n !== activePhotoName);
+        } else {
+            State.pinnedPhotos.push(activePhotoName);
+        }
+        localStorage.setItem('pinned_photos', JSON.stringify(State.pinnedPhotos));
+        contextMenu.classList.add('hidden');
+        renderPhotosView(folder);
+    };
+
+    document.getElementById('photo-ctx-delete').onclick = async () => {
+        if (!activePhotoName) return;
+        if (confirm("Delete this photo?")) {
+            await sb.storage.from(SUPABASE_BUCKET).remove([`${SUPABASE_PHOTO_FOLDER}/${activePhotoName}`]);
+            State.favoritePhotos = State.favoritePhotos.filter(n => n !== activePhotoName);
+            State.pinnedPhotos = State.pinnedPhotos.filter(n => n !== activePhotoName);
+            localStorage.setItem('favorite_photos', JSON.stringify(State.favoritePhotos));
+            localStorage.setItem('pinned_photos', JSON.stringify(State.pinnedPhotos));
+            contextMenu.classList.add('hidden');
+            renderPhotosView(folder);
+        }
+    };
 }
+
 
 // ================================================================
 // 9. VIDEOS VIEW
@@ -382,7 +513,7 @@ async function renderPhotosView() {
 async function renderVideosView() {
     elContentArea.innerHTML = `
         <div class="section-wrap view-enter">
-            <h2 class="section-title">Our Stories</h2>
+            <h2 class="section-title">Video Stories</h2>
             <div class="videos-list" id="v-list"></div>
             <button id="load-more-v" class="btn-more hidden">Load More Stories</button>
         </div>`;
@@ -395,7 +526,7 @@ async function fetchVideos(container) {
         const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=10&playlistId=${YOUTUBE_PLAYLIST_ID}&key=${YOUTUBE_API_KEY}${State.ytNextPageToken ? '&pageToken='+State.ytNextPageToken : ''}`;
         const res = await fetch(url);
         const data = await res.json();
-        
+
         data.items.forEach(item => {
             const id = item.snippet.resourceId.videoId;
             const title = item.snippet.title;
@@ -410,12 +541,12 @@ async function fetchVideos(container) {
                 </div>`;
             container.appendChild(div);
         });
-        
+
         State.ytNextPageToken = data.nextPageToken;
         const btn = document.getElementById('load-more-v');
         if (btn) btn.classList.toggle('hidden', !State.ytNextPageToken);
-    } catch (e) { 
-        container.innerHTML = `<p class="error">Error connecting to the stars: ${e.message}</p>`; 
+    } catch (e) {
+        container.innerHTML = `<p class="error">Error connecting to the stars: ${e.message}</p>`;
     }
 }
 
@@ -438,7 +569,7 @@ async function renderLettersView() {
             <div id="notes-list" class="letters-container"></div>
             <div class="add-note-fab" id="add-n-btn"><i class="fas fa-plus"></i></div>
         </div>`;
-    
+
     await fetchNotes();
     const list = document.getElementById('notes-list');
     const searchInp = document.getElementById('notes-search');
@@ -447,8 +578,8 @@ async function renderLettersView() {
 
     function renderNotesGrid(filter = '') {
         list.innerHTML = '';
-        const filtered = State.notes.filter(n => 
-            n.title.toLowerCase().includes(filter.toLowerCase()) || 
+        const filtered = State.notes.filter(n =>
+            n.title.toLowerCase().includes(filter.toLowerCase()) ||
             n.content.toLowerCase().includes(filter.toLowerCase())
         );
 
@@ -466,7 +597,7 @@ async function renderLettersView() {
                     <span>${new Date(n.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>
                     <button class="note-card__dots" data-id="${n.id}"><i class="fas fa-ellipsis-v"></i></button>
                 </div>`;
-            
+
             div.onclick = (e) => {
                 if (e.target.closest('.note-card__dots')) return;
                 openNoteEditor(n.id);
@@ -505,15 +636,15 @@ async function fetchNotes() {
 }
 
 function openNoteEditor(id = null) {
-    const note = id ? State.notes.find(n => n.id === id) : { 
-        id: crypto.randomUUID(), title: '', content: '', color: 'default', is_pinned: false, created_at: new Date().toISOString() 
+    const note = id ? State.notes.find(n => n.id === id) : {
+        id: crypto.randomUUID(), title: '', content: '', color: 'default', is_pinned: false, created_at: new Date().toISOString()
     };
     State.activeNote = { ...note };
     elNoteEditTitle.value = note.title;
     elNoteEditBody.value = note.content;
     elNoteEditDate.textContent = id ? `Edited ${new Date(note.created_at).toLocaleDateString()}` : 'New Note';
     elNotePinBtn.classList.toggle('active', note.is_pinned);
-    
+
     document.querySelectorAll('.color-dot').forEach(dot => {
         dot.classList.toggle('active', dot.dataset.color === (note.color || 'default'));
     });
@@ -523,9 +654,9 @@ function openNoteEditor(id = null) {
 
 elNoteBackBtn.onclick = () => elNoteEditorModal.classList.remove('visible');
 elNoteSaveBtn.onclick = async () => {
-    const n = { 
-        ...State.activeNote, 
-        title: elNoteEditTitle.value.trim() || 'Untitled', 
+    const n = {
+        ...State.activeNote,
+        title: elNoteEditTitle.value.trim() || 'Untitled',
         content: elNoteEditBody.value.trim(),
         created_at: new Date().toISOString()
     };
@@ -745,7 +876,7 @@ function initCatchGame() {
     canvas.width = canvas.offsetWidth; canvas.height = 400;
     const ctx = canvas.getContext('2d');
     let catcherX = canvas.width/2, score = 0, hearts = [];
-    
+
     canvas.onmousemove = (e) => catcherX = e.offsetX;
     canvas.ontouchmove = (e) => { e.preventDefault(); catcherX = e.touches[0].clientX - canvas.offsetLeft; };
 
@@ -793,7 +924,7 @@ function renderSettingsView() {
                 <button class="btn-logout" id="settings-logout">Lock Site</button>
             </div>
         </div>`;
-    
+
     document.getElementById('music-toggle').onclick = (e) => {
         State.musicOn = !State.musicOn;
         e.target.classList.toggle('on', State.musicOn);
@@ -805,11 +936,60 @@ function renderSettingsView() {
 // ================================================================
 // 15. HELPERS
 // ================================================================
-function openLightbox(url, caption) {
-    elLbImg.src = url; elLbCaption.textContent = caption;
+function openLightboxGallery(index) {
+    if (!State.photoList || State.photoList.length === 0) return;
+    State.photoIndex = index;
+    updateLightboxUI();
     elLightbox.classList.add('open');
 }
+
+function updateLightboxUI() {
+    const photo = State.photoList[State.photoIndex];
+    elLbImg.src = photo.url;
+    elLbFav.innerHTML = State.favoritePhotos.includes(photo.name)
+        ? '<i class="fas fa-heart" style="color:var(--netflix-red);"></i>'
+        : '<i class="far fa-heart"></i>';
+}
+
+elLbFav.onclick = () => {
+    const photo = State.photoList[State.photoIndex];
+    if (State.favoritePhotos.includes(photo.name)) {
+        State.favoritePhotos = State.favoritePhotos.filter(n => n !== photo.name);
+    } else {
+        State.favoritePhotos.push(photo.name);
+        launchConfetti();
+    }
+    localStorage.setItem('favorite_photos', JSON.stringify(State.favoritePhotos));
+    updateLightboxUI();
+
+    // Refresh photos view in background if it's currently active
+    if (State.currentView === 'photos') {
+        const activeTab = document.querySelector('.folder-tab.active');
+        if (activeTab) renderPhotosView(activeTab.dataset.folder);
+    }
+};
+
 elLbClose.onclick = () => elLightbox.classList.remove('open');
+
+// Swipe support for Lightbox
+let touchStartX = 0;
+elLightbox.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+elLightbox.addEventListener('touchend', e => {
+    const touchEndX = e.changedTouches[0].screenX;
+    if (touchEndX < touchStartX - 40) {
+        // swipe left (next)
+        if (State.photoIndex < State.photoList.length - 1) {
+            State.photoIndex++;
+            updateLightboxUI();
+        }
+    } else if (touchEndX > touchStartX + 40) {
+        // swipe right (prev)
+        if (State.photoIndex > 0) {
+            State.photoIndex--;
+            updateLightboxUI();
+        }
+    }
+}, {passive: true});
 
 function launchConfetti() {
     for (let i = 0; i < 50; i++) {
@@ -837,15 +1017,17 @@ function escHtml(str) {
 // 16. BOOT
 // ================================================================
 document.body.onclick = () => {
-    elNoteContextMenu.classList.add('hidden');
-    elGlobalSettingsMenu.classList.add('hidden');
+    if (elNoteContextMenu) elNoteContextMenu.classList.add('hidden');
+    if (elGlobalSettingsMenu) elGlobalSettingsMenu.classList.add('hidden');
 };
 
 const keypad = document.getElementById('keypad');
-keypad.onclick = (e) => {
-    const key = e.target.closest('.key');
-    if (key) handlePassKey(key.dataset.key);
-};
+if (keypad) {
+    keypad.onclick = (e) => {
+        const key = e.target.closest('.key');
+        if (key) handlePassKey(key.dataset.key);
+    };
+}
 
 init3DHero();
 

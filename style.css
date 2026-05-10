@@ -1004,6 +1004,7 @@ body.sidebar-open { overflow: hidden; }
     box-shadow: 0 10px 30px rgba(0,0,0,0.12);
     animation: menu-pop 0.25s cubic-bezier(.18,.89,.32,1.28);
 }
+.note-context-menu.hidden, .note-options-menu.hidden, .global-settings-menu.hidden { display: none !important; }
 @keyframes menu-pop {
     from { opacity: 0; transform: scale(0.9) translateY(-10px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
@@ -1112,6 +1113,14 @@ body.sidebar-open { overflow: hidden; }
     visibility: visible;
 }
 
+/* Lightbox swipe hint */
+#lightbox::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
 #lb-inner {
     position: relative;
     width: 90%;
@@ -1140,29 +1149,32 @@ body.sidebar-open { overflow: hidden; }
 }
 
 #lb-close {
-    position: absolute;
-    top: -40px;
-    right: 0;
-    width: 40px;
-    height: 40px;
-    background: transparent;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    background: rgba(0,0,0,0.55);
     color: var(--netflix-white);
-    font-size: 2rem;
+    font-size: 1.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     border: none;
     z-index: 9001;
-    transition: transform 0.2s;
+    border-radius: 50%;
+    backdrop-filter: blur(6px);
+    transition: all 0.2s;
 }
 
 #lb-close:hover {
-    transform: scale(1.2);
+    background: var(--netflix-red);
+    transform: scale(1.1);
 }
 
 @media (max-width: 768px) {
-    #lb-close { top: -50px; right: -10px; font-size: 2.5rem; }
+    #lb-close { top: 16px; right: 16px; }
 }
 
 /* Floating Petals / Hearts */
@@ -1562,12 +1574,12 @@ body.sidebar-open { overflow: hidden; }
 .note-context-menu, .note-options-menu, .global-settings-menu {
     position: fixed;
     z-index: 3000;
-    background: white;
-    border: 1px solid var(--gold);
-    border-radius: 18px;
-    padding: 0.6rem;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
-    min-width: 200px;
+    background: #181818;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 0.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    min-width: 180px;
 }
 
 .context-menu-item, .options-item, .settings-item {
@@ -1581,9 +1593,9 @@ body.sidebar-open { overflow: hidden; }
     cursor: pointer;
     transition: all 0.2s;
 }
-.context-menu-item:active, .options-item:active, .settings-item:active {
-    background: var(--bg);
-    color: var(--gold);
+.context-menu-item:active, .options-item:active, .settings-item:active, .context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--netflix-red);
 }
 
 .options-colors {
@@ -2188,3 +2200,245 @@ body {
         width: 100%;
     }
 }
+
+/* ────────────────────────────────────────────────────────────
+   20. PHOTOS SECTION ENHANCEMENTS
+──────────────────────────────────────────────────────────── */
+.photos-section-wrapper {
+    padding-bottom: 100px; /* Space for bottom nav */
+    background-color: var(--netflix-black);
+    min-height: 100vh;
+    color: #fff;
+    max-width: 100% !important; /* override .section-wrap */
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 1rem;
+}
+.photos-section-wrapper .section-title {
+    color: #fff;
+    font-family: var(--font-body);
+    font-weight: 800;
+    margin-bottom: 0.1rem;
+    font-size: 2.2rem;
+    text-align: left;
+    padding: 0;
+}
+.photos-sub {
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    color: #666;
+    margin-bottom: 1.8rem;
+    text-transform: uppercase;
+    text-align: left;
+}
+
+/* Folders */
+.folder-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+.folder-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    cursor: pointer;
+    min-width: 120px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+.folder-tab.active {
+    opacity: 1;
+}
+.folder-tab span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #999;
+    text-align: left;
+    transition: color 0.3s ease;
+}
+.folder-tab.active span {
+    color: #fff;
+}
+.folder-thumb {
+    width: 120px;
+    height: 120px; /* Square folders as requested */
+    border-radius: 16px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.album-thumb {
+    background-color: #333;
+    background-image: linear-gradient(135deg, #1a1a1a, #4a4a4a);
+}
+.fav-thumb {
+    background-color: var(--netflix-red);
+    background-image: linear-gradient(135deg, var(--netflix-dark-red), var(--netflix-red));
+}
+
+/* Masonry Grid */
+.photos-masonry {
+    columns: 2;
+    column-gap: 1rem;
+    padding-bottom: 2rem;
+}
+.photo-card-masonry {
+    break-inside: avoid;
+    margin-bottom: 1.2rem;
+    position: relative;
+    border-radius: 20px; /* More rounded like the image */
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    background: #1a1a1a;
+    transition: transform 0.3s ease;
+}
+.photo-card-masonry:active {
+    transform: scale(0.98);
+}
+.photo-card-masonry img {
+    width: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 12px;
+}
+.photo-dots {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s;
+}
+.photo-dots:hover {
+    background: var(--netflix-red);
+}
+.photo-pin-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    color: white;
+    background: var(--netflix-red);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* Bottom Nav */
+.photos-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: #121212;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.4);
+    z-index: 100;
+}
+.bottom-nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+    padding: 0 1.5rem;
+    position: relative;
+    max-width: 500px;
+    margin: 0 auto;
+}
+.nav-icon {
+    font-size: 1.4rem;
+    color: #a0a0a0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-icon.active {
+    color: var(--netflix-red);
+}
+.nav-icon:active {
+    transform: scale(0.9);
+}
+.center-fab {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff8a8a, var(--netflix-red));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 8px 20px rgba(229, 9, 20, 0.4);
+    border: 4px solid #121212;
+}
+.center-fab:hover {
+    transform: translateX(-50%) scale(1.05);
+}
+
+/* Lightbox Enhancements */
+#lb-fav {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0,0,0,0.55);
+    border: none;
+    color: white;
+    font-size: 1.6rem;
+    cursor: pointer;
+    z-index: 9001;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+    transition: all 0.25s;
+}
+#lb-fav:hover {
+    background: var(--netflix-red);
+    transform: scale(1.1);
+}
+#lb-fav:active {
+    transform: scale(0.9);
+}
+#lb-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+#lb-inner img {
+    max-height: 94vh;
+    max-width: 96vw;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.7);
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
