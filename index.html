@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0a0a1a">
-    <meta name="description" content="A cosmic birthday surprise for Sakshi, from Nitin.">
+    <meta name="theme-color" content="#141414">
+    <meta name="description" content="A romantic birthday surprise for Sakshi, from Nitin.">
     <title>The Gravity of Us ✨</title>
 
-    <!-- Fonts -->
+    <!-- Netflix-style Fonts (Barlow = Netflix Sans substitute) & Romantic Script Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&family=Great+Vibes&display=swap" rel="stylesheet">
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -31,7 +31,7 @@
     ===================================================== -->
     <div id="gatekeeper" class="overlay" role="dialog" aria-modal="true" aria-label="Enter passcode">
         <div class="pass-card">
-            <h1 class="pass-brand">The Gravity of Us</h1>
+            <h1 class="pass-brand script-font">The Gravity of Us</h1>
             <p class="pass-hint">Enter the universe seed</p>
             <div class="pass-display" id="pass-display" aria-live="polite">
                 <span id="pass-dots"></span>
@@ -56,12 +56,39 @@
     <!-- =====================================================
          LAYER 2: BIRTHDAY REVEAL (shown after explosion)
     ===================================================== -->
-    <div id="birthday-reveal" aria-hidden="true">
-        <h2 class="bday-title">Happy Birthday,<br>Sakshi</h2>
-        <p class="bday-sub">A journey through our universe.</p>
+    <div id="birthday-reveal" class="hidden" aria-hidden="true">
+        <div class="reveal-content">
+            <img src="https://i.ibb.co/tw7KCLJM/cake.gif" alt="Birthday Cake" class="cake-gif">
+            <h2 class="bday-title">Happy Birthday,<br>Sakshi</h2>
+            <p class="bday-sub">A journey through our universe.</p>
+            <button class="close-reveal" id="close-reveal">Close</button>
+        </div>
     </div>
 
-    <!-- =====================================================
+    <!-- Earth Container (Memory Globe) -->
+    <div id="earth-container" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: all;"></div>
+
+    <!-- Search FAB (Floating Action Button) -->
+    <div id="search-fab" class="search-fab">
+        🔍
+    </div>
+
+    <!-- Hidden Search Input (Appears when FAB is clicked) -->
+    <div id="search-input-container" class="search-input-container-fab">
+        <input type="text" id="search-input" class="search-input-fab" placeholder="Search a memory (e.g. Delhi)">
+        <button id="close-search-fab" class="close-search-fab">✕</button>
+    </div>
+
+    <!-- Sticky Note Popup -->
+    <div id="sticky-note" class="sticky-note">
+        <button id="sticky-close" class="sticky-close-btn">✕</button>
+        <div class="sticky-content">
+            <img id="sticky-img" src="" alt="Memory" class="sticky-img">
+            <p id="sticky-text" class="sticky-text"></p>
+        </div>
+    </div>
+
+    <!-- = = = = = = = = = = = = = = = = = = = = = = = = = = =
          LAYER 3: SUPABASE SIGN IN
     ===================================================== -->
     <div id="signin-overlay" class="signin-overlay hidden" role="dialog" aria-modal="true" aria-label="Sign In">
@@ -114,6 +141,10 @@
 
         <!-- Topbar -->
         <header class="topbar">
+            <div class="topbar-logo">
+                <span class="netflix-n">N</span>
+                <span class="topbar-title">The Gravity of Us</span>
+            </div>
             <button id="hamburger-btn" class="hamburger" aria-label="Open navigation menu" aria-expanded="false" aria-controls="sidebar-menu">
                 <i class="fas fa-bars" aria-hidden="true"></i>
             </button>
@@ -165,32 +196,35 @@
             </div>
         </nav>
 
-        <!-- Hero Section (default view) -->
+        <!-- Hero Section (3D Heart View) -->
         <section id="hero-section" class="hero-section" aria-label="Hero">
+            <div id="hero-3d-container" class="hero-3d-container"></div>
             
-            <!-- Step 1: Initial Trigger -->
-            <div id="cake-trigger" class="cake-trigger-wrap">
-                <button id="btn-tap-start" class="btn-tap-start">Tap for a surprise ✨</button>
-            </div>
-            
-            <!-- Mini Mute Button for Cheers -->
-            <button id="cheers-mute-toggle" class="mini-mute-btn" aria-label="Mute cheers sound">
-                <i class="fas fa-volume-up"></i>
-            </button>
-
-            <!-- Step 2: The Cake GIF (Visible after tap) -->
-            <div id="cake-display" class="cake-display hidden">
-                <div class="cake-gif-container" id="cake-gif-btn" role="button" aria-label="Tap the cake">
-                    <img src="https://i.ibb.co/1f4qSsmV/2297342-af6bf.gif" alt="Birthday Cake">
+            <div class="hero-overlay">
+                <h1 id="hero-heading" class="hero-heading"></h1>
+                <p id="hero-subheading" class="hero-subheading" style="opacity: 0;">Every heartbeat, every smile, every moment — for you.</p>
+                <div class="hero-btns" id="hero-btns" style="opacity: 0;">
+                    <button id="hero-cta-btn" class="hero-cta-btn">
+                        <i class="fas fa-play"></i> Play
+                    </button>
+                    <button id="hero-more-btn" class="hero-more-btn">
+                        <i class="fas fa-info-circle"></i> More Info
+                    </button>
                 </div>
             </div>
 
-            <!-- Step 3: The Wish (Visible after cake tap) -->
-            <div id="bday-wish" class="bday-wish hidden">
-                <h1 class="hero-name">Happy Birthday,<br>Sakshi 🌸</h1>
+            <!-- Sticky Note Popup -->
+            <div id="memory-sticky-note" class="sticky-note-popup hidden">
+                <div class="sticky-note-card">
+                    <button class="sticky-close"><i class="fas fa-times"></i></button>
+                    <div class="sticky-image-wrap">
+                        <img id="sticky-img" src="" alt="Memory">
+                    </div>
+                    <div class="sticky-content">
+                        <p id="sticky-text"></p>
+                    </div>
+                </div>
             </div>
-
-            <p class="hero-cta">Open the menu ↑ to explore</p>
         </section>
 
         <!-- Dynamic Content Area -->
@@ -255,9 +289,13 @@
 
     <!-- Lightbox for photos -->
     <div id="lightbox" aria-modal="true" role="dialog" aria-label="Photo viewer">
-        <button id="lb-close" aria-label="Close photo"><i class="fas fa-times" aria-hidden="true"></i></button>
-        <img id="lb-img" src="" alt="">
-        <p id="lb-caption"></p>
+        <button id="lb-close" type="button" aria-label="Close photo">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+        <div id="lb-inner">
+            <img id="lb-img" src="" alt="">
+            <p id="lb-caption"></p>
+        </div>
     </div>
 
     <!-- Background audio -->
@@ -268,6 +306,7 @@
     ===================================================== -->
     <!-- CDN Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.3/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
