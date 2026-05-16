@@ -603,15 +603,11 @@ let stAllFiles = [];
 let stCurrentPage = 0;
 const ST_ITEMS_PER_PAGE = 5;
 
-// Use a CORS proxy when running on localhost to bypass StreamTape CORS restrictions
+// Use a CORS proxy to bypass StreamTape CORS restrictions
 function stApiUrl(path) {
-    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     const fullUrl = 'https://api.streamtape.com' + path;
-    if (isLocalhost) {
-        // Must encode the ENTIRE url so the &key parameter isn't stripped by the proxy
-        return 'https://corsproxy.io/?' + encodeURIComponent(fullUrl);
-    }
-    return fullUrl;
+    // Must encode the ENTIRE url so the &key parameter isn't stripped by the proxy
+    return 'https://corsproxy.io/?' + encodeURIComponent(fullUrl);
 }
 
 async function renderStreamTapeView() {
