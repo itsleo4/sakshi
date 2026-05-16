@@ -257,7 +257,7 @@ function navigateTo(view) {
     closeSidebar();
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
 
-    const restricted = ['photos', 'videos', 'letters'];
+    const restricted = ['photos', 'videos', 'streamtape', 'letters'];
     if (restricted.includes(view) && !State.sbLoggedIn) {
         openSignin(view);
         return;
@@ -288,6 +288,7 @@ function navigateTo(view) {
     const renderers = {
         photos:   renderPhotosView,
         videos:   renderVideosView,
+        streamtape: renderStreamTapeView,
         letters:  renderLettersView,
         games:    renderGamesView,
         settings: renderSettingsView,
@@ -344,54 +345,115 @@ document.getElementById('logout-btn').onclick = logout;
 // ================================================================
 // 8. PHOTOS VIEW
 // ================================================================
-async function renderPhotosView(folder = 'ALBUM') {
+async function renderPhotosView(folder = null) {
+    // First, fetch data
+    const { data } = await sb.storage.from(SUPABASE_BUCKET).list(SUPABASE_PHOTO_FOLDER);
+    let files = (data || []).filter(f => f.name !== '.emptyFolderPlaceholder');
+    
+    // Sort logic
+    files.sort((a, b) => {
+        const pinA = State.pinnedPhotos.includes(a.name) ? 1 : 0;
+        const pinB = State.pinnedPhotos.includes(b.name) ? 1 : 0;
+        if (pinA !== pinB) return pinB - pinA;
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+
+    const favFiles = files.filter(f => State.favoritePhotos.includes(f.name));
+
+    const getCoverUrl = (fileArray) => {
+        if (fileArray.length > 0) {
+            return sb.storage.from(SUPABASE_BUCKET).getPublicUrl(`${SUPABASE_PHOTO_FOLDER}/${fileArray[0].name}`).data.publicUrl;
+        }
+        return 'https://via.placeholder.com/400x400/111111/444444?text=Empty'; // fallback
+    };
+
+    if (folder === null) {
+        // Show Album Dashboard
+        elContentArea.innerHTML = `
+            <div class="section-wrap view-enter antigravity-photos">
+                <h2 class="section-title text-center" style="margin-top:20px; font-weight:800; font-size:2.2rem; color:#fff;">Galleries</h2>
+                
+                <!-- Upload Button Top Center -->
+                <button class="ag-upload-fab" id="upload-fab">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <input type="file" id="photo-file-input" accept="image/*" style="display:none">
+                <div class="upload-toast" id="upload-toast"></div>
+
+                <div class="ag-albums-grid">
+                    <div class="ag-album-card" data-folder="ALBUM">
+                        <div class="ag-album-cover" style="background-image: url('${getCoverUrl(files)}')"></div>
+                        <h3 class="album-title">All Photos</h3>
+                        <p class="album-count">${files.length} items</p>
+                    </div>
+                    <div class="ag-album-card" data-folder="Favorites">
+                        <div class="ag-album-cover" style="background-image: url('${getCoverUrl(favFiles)}')"></div>
+                        <h3 class="album-title">Favorites <i class="fas fa-heart" style="color:#ff0033;font-size:0.8rem;"></i></h3>
+                        <p class="album-count">${favFiles.length} items</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.querySelectorAll('.ag-album-card').forEach(card => {
+            card.onclick = () => renderPhotosView(card.dataset.folder);
+        });
+
+        const fab = document.getElementById('upload-fab');
+        const input = document.getElementById('photo-file-input');
+        fab.onclick = () => input.click();
+
+        input.onchange = async () => {
+            if (!input.files[0]) return;
+            showToast("Uploading...", "info");
+            const file = input.files[0];
+            const path = `${SUPABASE_PHOTO_FOLDER}/${Date.now()}_${file.name}`;
+            const { error } = await sb.storage.from(SUPABASE_BUCKET).upload(path, file);
+            if (!error) { showToast("Uploaded!", "success"); renderPhotosView(null); }
+        };
+
+        return;
+    }
+
+    // Render Grid for specific folder
+    const displayFiles = folder === 'Favorites' ? favFiles : files;
+    
+    State.photoList = displayFiles.map(f => {
+        return { 
+            name: f.name, 
+            url: sb.storage.from(SUPABASE_BUCKET).getPublicUrl(`${SUPABASE_PHOTO_FOLDER}/${f.name}`).data.publicUrl 
+        };
+    });
+
     elContentArea.innerHTML = `
-        <div class="section-wrap view-enter photos-section-wrapper">
-            <h2 class="section-title">Illustrations</h2>
-            <div class="photos-sub">CURATED GALLERIES</div>
-
-            <div class="folder-tabs">
-                <div class="folder-tab ${folder === 'ALBUM' ? 'active' : ''}" data-folder="ALBUM">
-                    <div class="folder-thumb album-thumb"></div>
-                    <span>ALBUM</span>
-                </div>
-                <div class="folder-tab ${folder === 'Favorites' ? 'active' : ''}" data-folder="Favorites">
-                    <div class="folder-thumb fav-thumb"></div>
-                    <span>Favorites</span>
-                </div>
+        <div class="section-wrap view-enter antigravity-photos">
+            <div class="ag-folder-header">
+                <button class="ag-back-btn" id="back-to-albums"><i class="fas fa-arrow-left"></i></button>
+                <h2 class="section-title" style="margin:0; font-weight:800; font-size:2rem; color:#fff;">${folder === 'ALBUM' ? 'All Photos' : 'Favorites'}</h2>
             </div>
 
-            <div class="photos-masonry" id="photos-grid"></div>
-
-            <!-- Bottom Navigation / Upload -->
-            <div class="photos-bottom-nav">
-                <div class="bottom-nav-inner">
-                    <i class="fas fa-compass nav-icon"></i>
-                    <i class="fas fa-th-large nav-icon active"></i>
-                    <button class="upload-fab center-fab" id="upload-fab"><i class="fas fa-plus"></i></button>
-                    <i class="fas fa-pen nav-icon"></i>
-                    <i class="fas fa-user nav-icon"></i>
-                </div>
-            </div>
-
-            <div class="upload-toast" id="upload-toast"></div>
+            <!-- Upload Button Top Center -->
+            <button class="ag-upload-fab" id="upload-fab">
+                <i class="fas fa-plus"></i>
+            </button>
             <input type="file" id="photo-file-input" accept="image/*" style="display:none">
+            <div class="upload-toast" id="upload-toast"></div>
 
-            <div id="photo-context-menu" class="note-context-menu hidden">
+            <div class="ag-photos-grid" id="photos-grid"></div>
+
+            <div id="photo-context-menu" class="note-context-menu hidden" style="z-index: 9999;">
                 <div class="context-menu-item" id="photo-ctx-pin"><i class="fas fa-thumbtack"></i> Pin</div>
                 <div class="context-menu-item" id="photo-ctx-fav"><i class="fas fa-heart"></i> Favorite</div>
                 <div class="context-menu-item delete" id="photo-ctx-delete"><i class="fas fa-trash"></i> Delete</div>
             </div>
-        </div>`;
+        </div>
+    `;
 
-    document.querySelectorAll('.folder-tab').forEach(t => {
-        t.onclick = () => renderPhotosView(t.dataset.folder);
-    });
+    document.getElementById('back-to-albums').onclick = () => renderPhotosView(null);
 
     const fab = document.getElementById('upload-fab');
     const input = document.getElementById('photo-file-input');
     fab.onclick = () => input.click();
-
     input.onchange = async () => {
         if (!input.files[0]) return;
         showToast("Uploading...", "info");
@@ -402,45 +464,27 @@ async function renderPhotosView(folder = 'ALBUM') {
     };
 
     const grid = document.getElementById('photos-grid');
-    const { data } = await sb.storage.from(SUPABASE_BUCKET).list(SUPABASE_PHOTO_FOLDER);
-
-    State.photoList = [];
-
-    let files = (data || []).filter(f => f.name !== '.emptyFolderPlaceholder');
-
-    // Sort: Pinned first, then by date
-    files.sort((a, b) => {
-        const pinA = State.pinnedPhotos.includes(a.name) ? 1 : 0;
-        const pinB = State.pinnedPhotos.includes(b.name) ? 1 : 0;
-        if (pinA !== pinB) return pinB - pinA;
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-    });
-
-    if (folder === 'Favorites') {
-        files = files.filter(f => State.favoritePhotos.includes(f.name));
-    }
-
     const contextMenu = document.getElementById('photo-context-menu');
     let activePhotoName = null;
 
-    files.forEach((f, idx) => {
-        const url = sb.storage.from(SUPABASE_BUCKET).getPublicUrl(`${SUPABASE_PHOTO_FOLDER}/${f.name}`).data.publicUrl;
-        State.photoList.push({ name: f.name, url: url });
-
+    displayFiles.forEach((f, idx) => {
+        const url = State.photoList[idx].url;
         const img = document.createElement('div');
-        img.className = 'photo-card-masonry';
+        img.className = 'ag-photo-item';
 
         const isPinned = State.pinnedPhotos.includes(f.name);
 
         img.innerHTML = `
-            <img src="${url}" loading="lazy">
-            ${isPinned ? '<div class="photo-pin-badge"><i class="fas fa-thumbtack"></i></div>' : ''}
-            <button class="photo-dots"><i class="fas fa-ellipsis-v"></i></button>
+            <div class="photo-img-wrap">
+                <img src="${url}" loading="lazy">
+            </div>
+            ${isPinned ? '<div class="ag-pin-badge"><i class="fas fa-thumbtack"></i></div>' : ''}
+            <button class="ag-photo-dots"><i class="fas fa-ellipsis-v"></i></button>
         `;
 
-        img.querySelector('img').onclick = () => openLightboxGallery(idx);
+        img.querySelector('.photo-img-wrap').onclick = () => openLightboxGallery(idx);
 
-        const dots = img.querySelector('.photo-dots');
+        const dots = img.querySelector('.ag-photo-dots');
         dots.onclick = (e) => {
             e.stopPropagation();
             activePhotoName = f.name;
@@ -463,7 +507,7 @@ async function renderPhotosView(folder = 'ALBUM') {
 
     // Hide context menu globally
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.photo-dots') && !e.target.closest('#photo-context-menu')) {
+        if (!e.target.closest('.ag-photo-dots') && !e.target.closest('#photo-context-menu')) {
             contextMenu?.classList.add('hidden');
         }
     }, { once: false });
@@ -548,6 +592,369 @@ async function fetchVideos(container) {
     } catch (e) {
         container.innerHTML = `<p class="error">Error connecting to the stars: ${e.message}</p>`;
     }
+}
+
+// ================================================================
+// 9.5. STREAMTAPE VIDEOS VIEW
+// ================================================================
+let stLogin = import.meta.env.VITE_STREAMTAPE_LOGIN;
+let stKey = import.meta.env.VITE_STREAMTAPE_KEY;
+let stAllFiles = [];
+let stCurrentPage = 0;
+const ST_ITEMS_PER_PAGE = 5;
+
+// Use a CORS proxy when running on localhost to bypass StreamTape CORS restrictions
+function stApiUrl(path) {
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const base = 'https://api.streamtape.com';
+    const proxy = 'https://corsproxy.io/?' + encodeURIComponent(base);
+    return (isLocalhost ? proxy : base) + path;
+}
+
+async function renderStreamTapeView() {
+    elContentArea.innerHTML = `
+        <div class="section-wrap view-enter antigravity-photos" style="position: relative; padding:0;">
+            <h2 class="section-title text-center" style="margin-top:20px; font-weight:800; font-size:2.2rem; color:#fff;">Videos</h2>
+            
+            <button class="ag-upload-fab" id="st-upload-fab" style="position:fixed; top:20px; right:20px; left:auto; transform:none; width:50px; height:50px; z-index:9000;">
+                <i class="fas fa-plus"></i>
+            </button>
+
+            <!-- Modern YouTube Style Upload Modal -->
+            <div id="st-upload-modal" class="signin-overlay hidden" style="z-index: 9999; display:flex; align-items:flex-end; padding:0; background:rgba(0,0,0,0.8);">
+                <div class="signin-screen" style="height: auto; width: 100%; border-radius: 20px 20px 0 0; background: #111; padding: 25px 20px 40px 20px; animation: slideUp 0.3s ease-out; box-shadow: 0 -10px 30px rgba(255,0,51,0.2); max-width: 600px; margin: 0 auto;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                        <h1 style="font-size: 1.4rem; color: #fff; margin:0; font-family:var(--font-body); font-weight:700;">Upload Video</h1>
+                        <button id="st-close-btn" style="background:transparent; border:none; color:#fff; font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+                    </div>
+                    
+                    <div class="signin-form" style="display:flex; flex-direction:column; gap:20px;">
+                        <div class="input-group">
+                            <input type="text" id="st-title-input" placeholder="Enter Video Title..." style="width:100%; background:transparent; border:none; border-bottom:1px solid rgba(255,0,51,0.4); color:#fff; font-size:1.1rem; padding:10px 0; outline:none;" required>
+                        </div>
+                        
+                        <div>
+                            <input type="file" id="st-file-input" accept=".mp4,.mov,video/*" style="display:none;" required>
+                            <button id="st-select-file-btn" style="width:100%; background:#1a1a1a; border:2px dashed rgba(255,0,51,0.5); color:#ff0033; padding:20px; border-radius:12px; font-size:1.1rem; font-weight:600; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:10px; transition:all 0.2s;">
+                                <i class="fas fa-cloud-upload-alt" style="font-size:2rem;"></i>
+                                Select Video File (.mp4, .mov)
+                            </button>
+                            <p id="st-selected-filename" style="color:#aaa; font-size:0.8rem; margin-top:8px; text-align:center; display:none;"></p>
+                        </div>
+
+                        <!-- Hidden Unlisted notice -->
+                        <p style="color:#666; font-size:0.75rem; text-align:center; margin:0;"><i class="fas fa-eye-slash"></i> Video will be automatically uploaded as Unlisted.</p>
+
+                        <div id="st-progress-wrapper" class="hidden" style="width:100%; background:#222; border-radius:10px; overflow:hidden; height:10px; margin-top:10px;">
+                            <div id="st-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #ff0033, #b30024); transition:width 0.2s;"></div>
+                        </div>
+                        <p id="st-progress-text" class="hidden" style="color:#ff0033; font-size:0.8rem; text-align:center; margin-top:5px;">Uploading... 0%</p>
+
+                        <button class="signin-submit-btn" id="st-submit-btn" style="background:#ff0033; color:#fff; border:none; padding:15px; border-radius:12px; font-size:1.1rem; font-weight:bold; cursor:pointer; margin-top:10px; transition:transform 0.2s;">
+                            <span class="btn-text">Upload to Server</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="yt-mobile-feed" id="st-list" style="display:flex; flex-direction:column; gap:20px; margin-top:20px;"></div>
+            
+            <div id="st-load-more-trigger" style="height:40px; margin:20px 0; display:flex; justify-content:center; align-items:center;">
+                <i class="fas fa-spinner fa-spin hidden" id="st-load-spinner" style="color:#ff0033; font-size:1.5rem;"></i>
+            </div>
+
+            <div class="upload-toast" id="st-toast"></div>
+        </div>
+    `;
+
+    const fab = document.getElementById('st-upload-fab');
+    const modal = document.getElementById('st-upload-modal');
+    const closeBtn = document.getElementById('st-close-btn');
+    const submitBtn = document.getElementById('st-submit-btn');
+    const titleInput = document.getElementById('st-title-input');
+    const fileInput = document.getElementById('st-file-input');
+    const selectFileBtn = document.getElementById('st-select-file-btn');
+    const filenameDisplay = document.getElementById('st-selected-filename');
+
+    fab.onclick = () => modal.classList.remove('hidden');
+    closeBtn.onclick = () => modal.classList.add('hidden');
+
+    selectFileBtn.onclick = () => fileInput.click();
+    fileInput.onchange = () => {
+        if (fileInput.files.length > 0) {
+            filenameDisplay.textContent = fileInput.files[0].name;
+            filenameDisplay.style.display = 'block';
+        }
+    };
+
+    submitBtn.onclick = async () => {
+        const title = titleInput.value.trim();
+        const file = fileInput.files[0];
+        if (!title || !file) {
+            alert('Please provide a title and select a video file.');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.5';
+        
+        const progWrapper = document.getElementById('st-progress-wrapper');
+        const progBar = document.getElementById('st-progress-bar');
+        const progText = document.getElementById('st-progress-text');
+        
+        progWrapper.classList.remove('hidden');
+        progText.classList.remove('hidden');
+        progBar.style.width = '0%';
+        progText.innerText = 'Uploading... 0%';
+
+        try {
+            const result = await uploadToStreamTapeWithProgress(file, title, (percent) => {
+                progBar.style.width = percent + '%';
+                progText.innerText = `Uploading... ${Math.round(percent)}%`;
+            });
+            
+            // Success cleanup
+            modal.classList.add('hidden');
+            titleInput.value = '';
+            fileInput.value = '';
+            filenameDisplay.style.display = 'none';
+            progWrapper.classList.add('hidden');
+            progText.classList.add('hidden');
+            
+            // Immediately prepend card
+            prependNewVideoCard(result.id, title, new Date().toISOString());
+            showSTToast("Video Uploaded Successfully!");
+            
+            // Silently sync with server
+            fetchStreamTapeList(true);
+        } catch (e) {
+            alert('Upload failed: ' + e.message);
+            progText.innerText = 'Error: ' + e.message;
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+        }
+    };
+
+    // Close menus globally
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.st-dots-btn') && !e.target.closest('.st-menu')) {
+            document.querySelectorAll('.st-menu').forEach(m => m.classList.add('hidden'));
+        }
+    });
+
+    // Initial load
+    await fetchStreamTapeList();
+
+    // Intersection Observer for Infinite Scroll
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && stCurrentPage * ST_ITEMS_PER_PAGE < stAllFiles.length) {
+            renderMoreStreamTapeVideos();
+        }
+    }, { threshold: 0.1 });
+    
+    observer.observe(document.getElementById('st-load-more-trigger'));
+}
+
+async function fetchStreamTapeList(silent = false) {
+    const list = document.getElementById('st-list');
+    if (!silent) list.innerHTML = '<p style="text-align:center; color:#888;">Loading videos...</p>';
+    
+    try {
+        const url = stApiUrl(`/file/listfolder?login=${stLogin}&key=${stKey}`);
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.status !== 200) throw new Error(data.msg);
+        
+        stAllFiles = data.result.files || [];
+        stAllFiles.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)); // newest first
+        
+        if (!silent) {
+            stCurrentPage = 0;
+            list.innerHTML = '';
+            renderMoreStreamTapeVideos();
+        }
+    } catch(e) {
+        if (!silent) list.innerHTML = `<p style="text-align:center; color:#ff0033;">Error: ${e.message}</p>`;
+    }
+}
+
+function renderMoreStreamTapeVideos() {
+    const list = document.getElementById('st-list');
+    const spinner = document.getElementById('st-load-spinner');
+    if (!list) return;
+    
+    spinner.classList.remove('hidden');
+    
+    setTimeout(() => {
+        const start = stCurrentPage * ST_ITEMS_PER_PAGE;
+        const end = start + ST_ITEMS_PER_PAGE;
+        const pageFiles = stAllFiles.slice(start, end);
+        
+        pageFiles.forEach(f => {
+            const el = createVideoCardElement(f);
+            list.appendChild(el);
+        });
+        
+        stCurrentPage++;
+        spinner.classList.add('hidden');
+        
+        if (stCurrentPage * ST_ITEMS_PER_PAGE >= stAllFiles.length) {
+            spinner.parentElement.innerHTML = '<p style="color:#666; font-size:0.9rem;">You have reached the end.</p>';
+        }
+    }, 500); 
+}
+
+function prependNewVideoCard(id, title, created_at) {
+    const list = document.getElementById('st-list');
+    const f = { linkid: id, name: title, created_at: created_at };
+    const el = createVideoCardElement(f);
+    list.prepend(el);
+}
+
+function createVideoCardElement(f) {
+    const list = document.getElementById('st-list');
+    const div = document.createElement('div');
+    div.className = 'yt-mobile-card';
+    div.dataset.id = f.linkid;
+    
+    div.style.background = '#050505';
+    div.style.borderBottom = '1px solid rgba(255,0,51,0.15)';
+    div.style.paddingBottom = '20px';
+    div.style.position = 'relative';
+
+    div.innerHTML = `
+        <div style="position:relative; width:100%; aspect-ratio:16/9; background:#000;">
+            <iframe src="https://streamtape.com/e/${f.linkid}" frameborder="0" allowfullscreen allowtransparency allow="autoplay" style="width:100%; height:100%;"></iframe>
+            <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.8); color:#fff; font-size:0.75rem; padding:2px 4px; border-radius:4px; pointer-events:none;">12:34</div>
+            <button class="st-dots-btn" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); border:1px solid rgba(255,0,51,0.3); color:#fff; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; transition:all 0.2s;"><i class="fas fa-ellipsis-v"></i></button>
+            
+            <div class="st-menu hidden" style="position:absolute; top:40px; right:8px; background:#111; border:1px solid #ff0033; border-radius:8px; padding:5px 0; z-index:20; box-shadow:0 5px 15px rgba(255,0,51,0.3); width:150px;">
+                <div class="st-menu-item st-pin" style="padding:10px 20px; color:#fff; cursor:pointer; font-size:0.9rem; transition:background 0.2s;"><i class="fas fa-thumbtack" style="margin-right:8px; color:#ff0033;"></i> Pin to Top</div>
+                <div class="st-menu-item st-delete" style="padding:10px 20px; color:#fff; cursor:pointer; font-size:0.9rem; transition:background 0.2s;"><i class="fas fa-trash" style="margin-right:8px; color:#ff0033;"></i> Delete</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:12px; padding:12px 10px 0 10px; align-items:flex-start;">
+            <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #ff0033, #b30024); flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; box-shadow:0 0 10px rgba(255,0,51,0.3);">M</div>
+            <div style="flex-grow:1; padding-right:10px;">
+                <h3 style="font-size:1.05rem; margin:0 0 5px 0; color:#fff; font-weight:600; line-height:1.3; font-family:var(--font-body);">${escHtml(f.name)}</h3>
+                <p style="font-size:0.8rem; color:#aaa; margin:0;">Memory Earth • ${Math.floor(Math.random()*100)+1}K views • ${new Date(f.created_at).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'})}</p>
+            </div>
+        </div>
+    `;
+    
+    const dotsBtn = div.querySelector('.st-dots-btn');
+    const menu = div.querySelector('.st-menu');
+    const deleteBtn = div.querySelector('.st-delete');
+    const pinBtn = div.querySelector('.st-pin');
+    
+    dotsBtn.onmouseover = () => dotsBtn.style.background = 'rgba(255,0,51,0.8)';
+    dotsBtn.onmouseout = () => dotsBtn.style.background = 'rgba(0,0,0,0.6)';
+
+    div.querySelectorAll('.st-menu-item').forEach(item => {
+        item.onmouseover = () => item.style.background = 'rgba(255,0,51,0.1)';
+        item.onmouseout = () => item.style.background = 'transparent';
+    });
+    
+    dotsBtn.onclick = (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.st-menu').forEach(m => {
+            if (m !== menu) m.classList.add('hidden');
+        });
+        menu.classList.toggle('hidden');
+    };
+    
+    deleteBtn.onclick = async (e) => {
+        e.stopPropagation();
+        menu.classList.add('hidden');
+        if (confirm("Delete this video permanently?")) {
+            try {
+                const delUrl = stApiUrl(`/file/delete?login=${stLogin}&key=${stKey}&file=${f.linkid}`);
+                const delRes = await fetch(delUrl);
+                const delData = await delRes.json();
+                if (delData.status === 200) {
+                    div.style.transition = "opacity 0.3s, transform 0.3s";
+                    div.style.opacity = "0";
+                    div.style.transform = "scale(0.9)";
+                    setTimeout(() => div.remove(), 300);
+                    showSTToast("Video Deleted");
+                } else {
+                    alert("Failed: " + delData.msg);
+                }
+            } catch(err) {
+                alert("Error: " + err.message);
+            }
+        }
+    };
+    
+    pinBtn.onclick = (e) => {
+        e.stopPropagation();
+        menu.classList.add('hidden');
+        list.prepend(div);
+        showSTToast("Pinned to top!");
+    };
+
+    return div;
+}
+
+function showSTToast(msg) {
+    const t = document.getElementById('st-toast');
+    if (t) { 
+        t.textContent = msg; 
+        t.style.background = '#ff0033';
+        t.style.boxShadow = '0 5px 15px rgba(255,0,51,0.4)';
+        t.className = `upload-toast visible`; 
+        setTimeout(() => t.classList.remove('visible'), 2000); 
+    }
+}
+
+function uploadToStreamTapeWithProgress(file, title, onProgress) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            // 1. Get upload ticket URL (CORS-proxied on localhost)
+            const ticketUrl = stApiUrl(`/file/ul?login=${stLogin}&key=${stKey}&name=${encodeURIComponent(title)}`);
+            const ticketRes = await fetch(ticketUrl);
+            const ticketData = await ticketRes.json();
+            if (ticketData.status !== 200) throw new Error(ticketData.msg || 'Could not get upload ticket');
+
+            // 2. Upload file using XMLHttpRequest
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', ticketData.result.url, true);
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    onProgress(percentComplete);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const uploadData = JSON.parse(xhr.responseText);
+                    if (uploadData.status === 200) {
+                        resolve(uploadData.result);
+                    } else {
+                        reject(new Error(uploadData.msg || 'Upload failed'));
+                    }
+                } else {
+                    reject(new Error(`Server error: ${xhr.status}`));
+                }
+            };
+
+            xhr.onerror = () => {
+                reject(new Error("Network error during upload"));
+            };
+
+            const formData = new FormData();
+            formData.append('file1', file);
+            formData.append('title', title);
+
+            xhr.send(formData);
+        } catch (err) {
+            reject(err);
+        }
+    });
 }
 
 // ================================================================
@@ -943,11 +1350,28 @@ function openLightboxGallery(index) {
     elLightbox.classList.add('open');
 }
 
-function updateLightboxUI() {
+function updateLightboxUI(direction = null) {
     const photo = State.photoList[State.photoIndex];
+    
+    if (direction) {
+        elLbImg.style.transition = 'none';
+        elLbImg.style.transform = `translateX(${direction === 'next' ? '50px' : '-50px'})`;
+        elLbImg.style.opacity = '0';
+        
+        void elLbImg.offsetWidth; // Force reflow
+        
+        elLbImg.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+        elLbImg.style.transform = 'translateX(0)';
+        elLbImg.style.opacity = '1';
+    } else {
+        elLbImg.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+        elLbImg.style.transform = 'translateX(0)';
+        elLbImg.style.opacity = '1';
+    }
+    
     elLbImg.src = photo.url;
     elLbFav.innerHTML = State.favoritePhotos.includes(photo.name)
-        ? '<i class="fas fa-heart" style="color:var(--netflix-red);"></i>'
+        ? '<i class="fas fa-heart" style="color:#ff0033;"></i>'
         : '<i class="far fa-heart"></i>';
 }
 
@@ -962,31 +1386,46 @@ elLbFav.onclick = () => {
     localStorage.setItem('favorite_photos', JSON.stringify(State.favoritePhotos));
     updateLightboxUI();
 
-    // Refresh photos view in background if it's currently active
     if (State.currentView === 'photos') {
-        const activeTab = document.querySelector('.folder-tab.active');
-        if (activeTab) renderPhotosView(activeTab.dataset.folder);
+        const activeTab = document.querySelector('.ag-back-btn');
+        if (activeTab) renderPhotosView(document.querySelector('.section-title').textContent === 'All Photos' ? 'ALBUM' : 'Favorites');
     }
 };
 
-elLbClose.onclick = () => elLightbox.classList.remove('open');
+elLbClose.onclick = () => {
+    elLightbox.classList.remove('open');
+};
 
 // Swipe support for Lightbox
 let touchStartX = 0;
-elLightbox.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+let touchStartY = 0;
+elLightbox.addEventListener('touchstart', e => { 
+    touchStartX = e.changedTouches[0].screenX; 
+    touchStartY = e.changedTouches[0].screenY;
+}, {passive: true});
+
 elLightbox.addEventListener('touchend', e => {
     const touchEndX = e.changedTouches[0].screenX;
-    if (touchEndX < touchStartX - 40) {
+    const touchEndY = e.changedTouches[0].screenY;
+    
+    // Check vertical swipe down to close
+    if (touchEndY > touchStartY + 60 && Math.abs(touchEndX - touchStartX) < 50) {
+        elLightbox.classList.remove('open');
+        return;
+    }
+    
+    // Check horizontal swipe
+    if (touchEndX < touchStartX - 40 && Math.abs(touchEndY - touchStartY) < 60) {
         // swipe left (next)
         if (State.photoIndex < State.photoList.length - 1) {
             State.photoIndex++;
-            updateLightboxUI();
+            updateLightboxUI('next');
         }
-    } else if (touchEndX > touchStartX + 40) {
+    } else if (touchEndX > touchStartX + 40 && Math.abs(touchEndY - touchStartY) < 60) {
         // swipe right (prev)
         if (State.photoIndex > 0) {
             State.photoIndex--;
-            updateLightboxUI();
+            updateLightboxUI('prev');
         }
     }
 }, {passive: true});
