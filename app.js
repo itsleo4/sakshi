@@ -706,42 +706,7 @@ async function renderStreamTapeView() {
                 <i class="fas fa-plus"></i>
             </button>
 
-            <!-- Modern YouTube Style Upload Modal (Fixed Position) -->
-            <div id="st-upload-modal" class="hidden" style="position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); transition:all 0.4s ease; padding:20px;">
-                <div class="signin-screen" style="height: auto; width: 100%; border-radius: 20px; background: #111; padding: 40px 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(255,0,51,0.2); max-width: 500px; margin: 0 auto; transform-origin: top right; transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                        <h1 style="font-size: 1.4rem; color: #fff; margin:0; font-family:var(--font-body); font-weight:700;">Upload Video</h1>
-                        <button id="st-close-btn" style="background:transparent; border:none; color:#fff; font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
-                    </div>
-                    
-                    <div class="signin-form" style="display:flex; flex-direction:column; gap:20px;">
-                        <div class="input-group">
-                            <input type="text" id="st-title-input" placeholder="Enter Video Title..." style="width:100%; background:transparent; border:none; border-bottom:1px solid rgba(255,0,51,0.4); color:#fff; font-size:1.1rem; padding:10px 0; outline:none;" required>
-                        </div>
-                        
-                        <div>
-                            <input type="file" id="st-file-input" accept=".mp4,.mov,video/*" style="display:none;" required>
-                            <button id="st-select-file-btn" style="width:100%; background:#1a1a1a; border:2px dashed rgba(255,0,51,0.5); color:#ff0033; padding:20px; border-radius:12px; font-size:1.1rem; font-weight:600; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:10px; transition:all 0.2s;">
-                                <i class="fas fa-cloud-upload-alt" style="font-size:2rem;"></i>
-                                Select Video File (.mp4, .mov)
-                            </button>
-                            <p id="st-selected-filename" style="color:#aaa; font-size:0.8rem; margin-top:8px; text-align:center; display:none;"></p>
-                        </div>
-
-                        <!-- Hidden Unlisted notice -->
-                        <p style="color:#666; font-size:0.75rem; text-align:center; margin:0;"><i class="fas fa-eye-slash"></i> Video will be automatically uploaded as Unlisted.</p>
-
-                        <div id="st-progress-wrapper" class="hidden" style="width:100%; background:#222; border-radius:10px; overflow:hidden; height:10px; margin-top:10px;">
-                            <div id="st-progress-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #ff0033, #b30024); transition:width 0.2s;"></div>
-                        </div>
-                        <p id="st-progress-text" class="hidden" style="color:#ff0033; font-size:0.8rem; text-align:center; margin-top:5px;">Uploading... 0%</p>
-
-                        <button class="signin-submit-btn" id="st-submit-btn" style="background:#ff0033; color:#fff; border:none; padding:15px; border-radius:12px; font-size:1.1rem; font-weight:bold; cursor:pointer; margin-top:10px; transition:transform 0.2s;">
-                            <span class="btn-text">Upload to Server</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- The Modal is now handled globally below to fix mobile scroll issues -->
 
             <div class="yt-mobile-feed" id="st-list" style="display:flex; flex-direction:column; gap:20px; margin-top:20px;"></div>
             
@@ -758,8 +723,37 @@ async function renderStreamTapeView() {
         </div>
     `;
 
+    // GLOBAL MODAL TELEPORT (Fix for Mobile Fixed Positioning)
+    let modal = document.getElementById('st-upload-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'st-upload-modal';
+        modal.className = 'hidden';
+        modal.style.cssText = 'position:fixed; inset:0; z-index:999999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.9); backdrop-filter:blur(15px); transition:all 0.3s ease; padding:20px;';
+        modal.innerHTML = `
+            <div class="signin-screen" style="width:100%; max-width:450px; background:#111; border-radius:20px; padding:35px 25px; box-shadow:0 25px 60px rgba(0,0,0,0.9), 0 0 40px rgba(229,9,20,0.3); transform-origin: top right; transform: scale(0); opacity:0; transition:all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+                    <h1 style="color:#fff; font-size:1.5rem; font-weight:800; margin:0; text-transform:uppercase; letter-spacing:1px;">Upload Video</h1>
+                    <button id="st-close-btn" style="background:none; border:none; color:#ff0033; font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:20px;">
+                    <input type="text" id="st-title-input" placeholder="Title your memory..." style="width:100%; background:#222; border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#fff; padding:15px; font-size:1rem; outline:none;">
+                    <input type="file" id="st-file-input" accept="video/*" style="display:none;">
+                    <button id="st-select-file-btn" style="width:100%; height:120px; background:rgba(229,9,20,0.05); border:2px dashed rgba(229,9,20,0.3); border-radius:15px; color:#ff0033; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; transition:all 0.2s;">
+                        <i class="fas fa-film" style="font-size:2rem;"></i>
+                        <span>Tap to Select Video</span>
+                        <small id="st-selected-filename" style="color:#666; font-size:0.8rem;"></small>
+                    </button>
+                    <div id="st-progress-wrapper" class="hidden" style="height:8px; background:#333; border-radius:4px; overflow:hidden;">
+                        <div id="st-progress-bar" style="width:0%; height:100%; background:#ff0033; transition:width 0.1s;"></div>
+                    </div>
+                    <button id="st-submit-btn" style="width:100%; background:#ff0033; color:#fff; border:none; padding:16px; border-radius:12px; font-weight:800; font-size:1.1rem; cursor:pointer; box-shadow:0 10px 20px rgba(229,9,20,0.3);">UPLOAD TO TIME CAPSULE</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+
     const fab = document.getElementById('st-upload-fab');
-    const modal = document.getElementById('st-upload-modal');
     const closeBtn = document.getElementById('st-close-btn');
     const submitBtn = document.getElementById('st-submit-btn');
     const titleInput = document.getElementById('st-title-input');
@@ -769,26 +763,22 @@ async function renderStreamTapeView() {
 
     fab.onclick = () => {
         modal.classList.remove('hidden');
-        // LOCK SCROLL
         const contentArea = document.getElementById('content-area');
         if (contentArea) contentArea.style.overflow = 'hidden';
 
         const screen = modal.querySelector('.signin-screen');
-        screen.style.transform = 'scale(0) translateY(-100px)';
-        screen.style.opacity = '0';
         setTimeout(() => {
-            screen.style.transform = 'scale(1) translateY(0)';
+            screen.style.transform = 'scale(1)';
             screen.style.opacity = '1';
         }, 10);
     };
     
     closeBtn.onclick = () => {
-        // UNLOCK SCROLL
         const contentArea = document.getElementById('content-area');
         if (contentArea) contentArea.style.overflow = 'auto';
 
         const screen = modal.querySelector('.signin-screen');
-        screen.style.transform = 'scale(0) translateY(-100px)';
+        screen.style.transform = 'scale(0)';
         screen.style.opacity = '0';
         setTimeout(() => modal.classList.add('hidden'), 400);
     };
