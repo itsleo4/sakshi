@@ -820,13 +820,21 @@ function createVideoCardElement(f) {
     div.style.paddingBottom = '20px';
     div.style.position = 'relative';
 
+    const fileSize = f.size ? (f.size / 1048576).toFixed(1) + ' MB' : '';
+    const dateStr = new Date(f.created_at).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+    const metaText = fileSize ? `Memory Earth • ${fileSize} • ${dateStr}` : `Memory Earth • ${dateStr}`;
+
     div.innerHTML = `
-        <div style="position:relative; width:100%; aspect-ratio:16/9; background:#000;">
-            <iframe src="https://streamtape.com/e/${f.linkid}" frameborder="0" allowfullscreen allowtransparency allow="autoplay" style="width:100%; height:100%;"></iframe>
-            <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.8); color:#fff; font-size:0.75rem; padding:2px 4px; border-radius:4px; pointer-events:none;">12:34</div>
-            <button class="st-dots-btn" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); border:1px solid rgba(255,0,51,0.3); color:#fff; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; transition:all 0.2s;"><i class="fas fa-ellipsis-v"></i></button>
+        <div class="st-video-container" style="position:relative; width:100%; aspect-ratio:16/9; background:#000; cursor:pointer; overflow:hidden;" onclick="loadStreamtapeIframe(this, '${f.linkid}')">
+            <!-- Placeholder before iframe loads -->
+            <div class="st-placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(45deg, #050505, #1a0005);">
+                <div style="width:60px; height:60px; border-radius:50%; background:rgba(255,0,51,0.2); border:2px solid #ff0033; display:flex; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(255,0,51,0.5); transition:transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                    <i class="fas fa-play" style="color:#ff0033; font-size:1.5rem; margin-left:5px;"></i>
+                </div>
+            </div>
+            <button class="st-dots-btn" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); border:1px solid rgba(255,0,51,0.3); color:#fff; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; transition:all 0.2s;" onclick="event.stopPropagation()"><i class="fas fa-ellipsis-v"></i></button>
             
-            <div class="st-menu hidden" style="position:absolute; top:40px; right:8px; background:#111; border:1px solid #ff0033; border-radius:8px; padding:5px 0; z-index:20; box-shadow:0 5px 15px rgba(255,0,51,0.3); width:150px;">
+            <div class="st-menu hidden" style="position:absolute; top:40px; right:8px; background:#111; border:1px solid #ff0033; border-radius:8px; padding:5px 0; z-index:20; box-shadow:0 5px 15px rgba(255,0,51,0.3); width:150px;" onclick="event.stopPropagation()">
                 <div class="st-menu-item st-pin" style="padding:10px 20px; color:#fff; cursor:pointer; font-size:0.9rem; transition:background 0.2s;"><i class="fas fa-thumbtack" style="margin-right:8px; color:#ff0033;"></i> Pin to Top</div>
                 <div class="st-menu-item st-delete" style="padding:10px 20px; color:#fff; cursor:pointer; font-size:0.9rem; transition:background 0.2s;"><i class="fas fa-trash" style="margin-right:8px; color:#ff0033;"></i> Delete</div>
             </div>
@@ -835,7 +843,7 @@ function createVideoCardElement(f) {
             <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #ff0033, #b30024); flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; box-shadow:0 0 10px rgba(255,0,51,0.3);">M</div>
             <div style="flex-grow:1; padding-right:10px;">
                 <h3 style="font-size:1.05rem; margin:0 0 5px 0; color:#fff; font-weight:600; line-height:1.3; font-family:var(--font-body);">${escHtml(f.name)}</h3>
-                <p style="font-size:0.8rem; color:#aaa; margin:0;">Memory Earth • ${Math.floor(Math.random()*100)+1}K views • ${new Date(f.created_at).toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'})}</p>
+                <p style="font-size:0.8rem; color:#aaa; margin:0;">${metaText}</p>
             </div>
         </div>
     `;
@@ -892,6 +900,34 @@ function createVideoCardElement(f) {
     };
 
     return div;
+}
+
+// Optimization: Load the heavy StreamTape iframe ONLY when the user actually clicks to play the video.
+window.loadStreamtapeIframe = function(container, linkid) {
+    if (container.querySelector('iframe')) return; // already loaded
+    
+    // Hide placeholder
+    const placeholder = container.querySelector('.st-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+    
+    // Create iframe
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://streamtape.com/e/${linkid}`;
+    iframe.frameBorder = "0";
+    iframe.allowFullscreen = true;
+    iframe.allowTransparency = true;
+    iframe.allow = "autoplay";
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.position = "absolute";
+    iframe.style.inset = "0";
+    iframe.style.zIndex = "1";
+    
+    // Ensure the menu button stays on top
+    const dotsBtn = container.querySelector('.st-dots-btn');
+    if (dotsBtn) dotsBtn.style.zIndex = "10";
+    
+    container.insertBefore(iframe, container.firstChild);
 }
 
 function showSTToast(msg) {
