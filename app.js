@@ -318,7 +318,15 @@ elSigninForm.onsubmit = async (e) => {
     elSigninSubmit.disabled = true;
     elSigninSubmit.querySelector('.btn-loader').classList.remove('hidden');
     try {
-        const { error } = await sb.auth.signInWithPassword({ email: elSigninEmail.value, password: elSigninPass.value });
+        const email = elSigninEmail.value.trim();
+        const allowedEmail = import.meta.env.VITE_ALLOWED_EMAIL;
+        
+        // Ensure only the specific email from .env is allowed to attempt login
+        if (allowedEmail && email.toLowerCase() !== allowedEmail.toLowerCase()) {
+            throw new Error("Unauthorized email address");
+        }
+
+        const { error } = await sb.auth.signInWithPassword({ email: email, password: elSigninPass.value });
         if (error) throw error;
         State.sbLoggedIn = true;
         elSigninOverlay.classList.add('hidden');

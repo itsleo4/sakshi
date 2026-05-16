@@ -13,7 +13,7 @@ export const SUPABASE_PHOTO_FOLDER = 'photos';
 export const SUPABASE_FEATURED_PHOTO = 'photo11.jpg'; // featured prominently
 
 // --- Passcode ---
-export const CORRECT_PASSCODE = '210058';
+export const CORRECT_PASSCODE = import.meta.env.VITE_PASSCODE;
 
 // --- Background Music ---
 export const MUSIC_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/sakshi/audio/birthday-song.mp3`;
