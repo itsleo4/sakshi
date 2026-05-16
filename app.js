@@ -603,11 +603,8 @@ let stAllFiles = [];
 let stCurrentPage = 0;
 const ST_ITEMS_PER_PAGE = 5;
 
-// Use a CORS proxy to bypass StreamTape CORS restrictions
 function stApiUrl(path) {
-    const fullUrl = 'https://api.streamtape.com' + path;
-    // corsproxy.io blocked streamtape, using allorigins instead
-    return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(fullUrl);
+    return 'https://api.streamtape.com' + path;
 }
 
 async function renderStreamTapeView() {
