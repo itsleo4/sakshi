@@ -93,10 +93,16 @@ const elSigninCancel    = document.getElementById('signin-cancel-btn');
 // ================================================================
 let sb;
 try {
+    // Robust check for supabase client
     if (typeof supabase !== 'undefined' && SUPABASE_URL && SUPABASE_KEY) {
         sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log("Supabase initialized successfully");
+    } else {
+        console.warn("Supabase configuration missing or library not loaded");
     }
-} catch (e) { console.error('Supabase init failed:', e); }
+} catch (e) { 
+    console.error('Supabase init failed:', e); 
+}
 
 // ================================================================
 // 4. PASSCODE & UNLOCK
@@ -260,18 +266,28 @@ document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
 });
 
 function navigateTo(view) {
+    console.log("Navigating to view:", view);
     State.currentView = view;
     closeSidebar();
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    
+    // Update active button state
+    document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === view);
+    });
 
+    // Check if section is restricted
     const restricted = ['photos', 'videos', 'streamtape', 'letters'];
     if (restricted.includes(view) && !State.sbLoggedIn) {
         openSignin(view);
         return;
+    } else {
+        // ALWAYS hide sign-in overlay when entering safe sections
+        if (elSigninOverlay) elSigninOverlay.classList.add('hidden');
     }
 
     const isHero = view === 'hero';
 
+    // Global layout switching
     if (isHero) {
         document.body.classList.add('view-hero');
     } else {
@@ -280,27 +296,35 @@ function navigateTo(view) {
         if (searchWrap) searchWrap.style.display = 'none';
     }
 
-    elHeroSection.style.display = isHero ? 'flex' : 'none';
-    elContentArea.style.display = isHero ? 'none' : 'block';
-    elFooter.style.display = isHero ? 'flex' : 'none';
+    if (elHeroSection) elHeroSection.style.display = isHero ? 'flex' : 'none';
+    if (elContentArea) elContentArea.style.display = isHero ? 'none' : 'block';
+    if (elFooter) elFooter.style.display = isHero ? 'flex' : 'none';
 
     if (isHero) {
-        elContentArea.innerHTML = '';
+        if (elContentArea) elContentArea.innerHTML = '';
         if (typeof init3DHero === 'function') init3DHero();
         return;
     }
 
+    // Stop background animations if needed
     if (State.catchRAF) cancelAnimationFrame(State.catchRAF);
 
+    // Call the appropriate renderer
     const renderers = {
-        photos:   renderPhotosView,
-        videos:   renderVideosView,
+        photos:     renderPhotosView,
+        videos:     renderVideosView,
         streamtape: renderStreamTapeView,
-        letters:  renderLettersView,
-        games:    renderGamesView,
-        settings: renderSettingsView,
+        letters:    renderLettersView,
+        games:      renderGamesView,
+        settings:   renderSettingsView,
     };
-    if (renderers[view]) renderers[view]();
+
+    if (renderers[view]) {
+        console.log("Executing renderer for:", view);
+        renderers[view]();
+    } else {
+        console.warn("No renderer found for view:", view);
+    }
 }
 
 // ================================================================
