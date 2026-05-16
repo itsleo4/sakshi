@@ -1055,7 +1055,15 @@ function uploadToStreamTapeWithProgress(file, title, onProgress) {
                 if (xhr.status === 200) {
                     const uploadData = JSON.parse(xhr.responseText);
                     if (uploadData.status === 200) {
-                        resolve(uploadData.result);
+                        // After successful upload, force rename to the user's chosen title
+                        const fileId = uploadData.result.id;
+                        const renameUrl = stApiUrl(`/file/rename?login=${stLogin}&key=${stKey}&file=${fileId}&name=${encodeURIComponent(title)}`);
+                        
+                        // We fire the rename and then resolve. We don't necessarily need to wait for rename to finish
+                        // but it's better to ensure the title is set before the UI refreshes.
+                        fetch(renameUrl)
+                            .then(() => resolve(uploadData.result))
+                            .catch(() => resolve(uploadData.result)); // Resolve anyway even if rename fails
                     } else {
                         reject(new Error(uploadData.msg || 'Upload failed'));
                     }
