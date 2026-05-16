@@ -4688,3 +4688,24 @@ body {
     .note-edit-title { font-size: 1.5rem; }
     .note-edit-body { font-size: 1rem; }
 }
+
+/* ────────────────────────────────────────────────────────────
+   20. ANIMATIONS & POLISH
+──────────────────────────────────────────────────────────── */
+
+@keyframes slideUp {
+    from { transform: translateY(80px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+#st-back-to-top:hover {
+    background: #ff0033 !important;
+    color: #fff !important;
+    transform: scale(1.1);
+}
+
+#st-back-to-top.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+}

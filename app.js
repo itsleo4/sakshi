@@ -749,6 +749,11 @@ async function renderStreamTapeView() {
                 <i class="fas fa-spinner fa-spin hidden" id="st-load-spinner" style="color:#ff0033; font-size:1.5rem;"></i>
             </div>
 
+            <!-- Back to Top Button -->
+            <button id="st-back-to-top" class="hidden" style="position:fixed; bottom:20px; left:20px; width:45px; height:45px; border-radius:50%; background:rgba(20,20,20,0.8); border:1px solid #ff0033; color:#ff0033; font-size:1.2rem; display:flex; align-items:center; justify-content:center; z-index:9000; cursor:pointer; transition:all 0.3s;">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+
             <div class="upload-toast" id="st-toast"></div>
         </div>
     `;
@@ -828,6 +833,17 @@ async function renderStreamTapeView() {
             document.querySelectorAll('.st-menu').forEach(m => m.classList.add('hidden'));
         }
     });
+
+    // Back to top logic
+    const btt = document.getElementById('st-back-to-top');
+    const contentArea = document.getElementById('content-area');
+    if (btt && contentArea) {
+        contentArea.onscroll = () => {
+            if (contentArea.scrollTop > 1000) btt.classList.remove('hidden');
+            else btt.classList.add('hidden');
+        };
+        btt.onclick = () => contentArea.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     // Initial load
     await fetchStreamTapeList();
@@ -926,6 +942,7 @@ function createVideoCardElement(f) {
             
             <div class="st-menu hidden" style="position:absolute; top:40px; right:8px; background:#111; border:1px solid #ff0033; border-radius:8px; padding:5px 0; z-index:20; box-shadow:0 5px 15px rgba(255,0,51,0.3); width:150px;" onclick="event.stopPropagation()">
                 <div class="st-menu-item st-pin" style="padding:10px 20px; color:#fff; cursor:pointer; font-size:0.9rem; transition:background 0.2s;"><i class="fas fa-thumbtack" style="margin-right:8px; color:#ff0033;"></i> Pin to Top</div>
+                <div class="st-menu-item st-rename" style="padding:10px 20px; color:#fff; cursor:pointer; font-size:0.9rem; transition:background 0.2s;"><i class="fas fa-edit" style="margin-right:8px; color:#ff0033;"></i> Rename</div>
                 <div class="st-menu-item st-delete" style="padding:10px 20px; color:#fff; cursor:pointer; font-size:0.9rem; transition:background 0.2s;"><i class="fas fa-trash" style="margin-right:8px; color:#ff0033;"></i> Delete</div>
             </div>
         </div>
@@ -942,6 +959,7 @@ function createVideoCardElement(f) {
     const menu = div.querySelector('.st-menu');
     const deleteBtn = div.querySelector('.st-delete');
     const pinBtn = div.querySelector('.st-pin');
+    const renameBtn = div.querySelector('.st-rename');
     
     dotsBtn.onmouseover = () => dotsBtn.style.background = 'rgba(255,0,51,0.8)';
     dotsBtn.onmouseout = () => dotsBtn.style.background = 'rgba(0,0,0,0.6)';
@@ -957,6 +975,28 @@ function createVideoCardElement(f) {
             if (m !== menu) m.classList.add('hidden');
         });
         menu.classList.toggle('hidden');
+    };
+    
+    renameBtn.onclick = async (e) => {
+        e.stopPropagation();
+        menu.classList.add('hidden');
+        const newName = prompt("Enter new title for the video:", f.name);
+        if (newName && newName !== f.name) {
+            try {
+                const url = stApiUrl(`/file/rename?login=${stLogin}&key=${stKey}&file=${f.linkid}&name=${encodeURIComponent(newName)}`);
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.status === 200) {
+                    div.querySelector('h3').textContent = newName;
+                    f.name = newName;
+                    showSTToast("Video renamed! ✨");
+                } else {
+                    alert("Rename failed: " + data.msg);
+                }
+            } catch (err) {
+                alert("Error renaming: " + err.message);
+            }
+        }
     };
     
     deleteBtn.onclick = async (e) => {
