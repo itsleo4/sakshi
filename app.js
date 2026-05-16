@@ -76,10 +76,17 @@ const elSigninForm      = document.getElementById('signin-form');
 const elSigninEmail     = document.getElementById('signin-email');
 const elSigninPass      = document.getElementById('signin-password');
 const elSigninError     = document.getElementById('signin-error');
-const elSigninBack      = document.getElementById('signin-back-btn');
 const elSigninSubmit    = document.getElementById('signin-submit-btn');
 const elPassToggle      = document.getElementById('toggle-password-btn');
 const elPassIcon        = document.getElementById('toggle-password-icon');
+
+// New 2-Step Elements
+const elSigninStep1     = document.getElementById('signin-step-1');
+const elSigninStep2     = document.getElementById('signin-step-2');
+const elSigninNextBtn   = document.getElementById('signin-next-btn');
+const elSigninBackStep  = document.getElementById('signin-back-step');
+const elDisplayEmail    = document.getElementById('display-entered-email');
+const elSigninCancel    = document.getElementById('signin-cancel-btn');
 
 // ================================================================
 // 3. SUPABASE INIT
@@ -304,41 +311,93 @@ function openSignin(view) {
     pendingView = view;
     elSigninOverlay.classList.remove('hidden');
     elSigninError.classList.add('hidden');
+    
+    // Reset to step 1
+    elSigninStep1.classList.remove('hidden-step');
+    elSigninStep2.classList.add('hidden-step');
+    elSigninEmail.value = '';
+    elSigninPass.value = '';
+    elSigninEmail.focus();
 }
-elSigninBack.onclick = () => elSigninOverlay.classList.add('hidden');
 
-elPassToggle.onclick = () => {
-    const isPass = elSigninPass.type === 'password';
-    elSigninPass.type = isPass ? 'text' : 'password';
-    elPassIcon.className = isPass ? 'fas fa-eye' : 'fas fa-eye-slash';
-};
+function closeSignin() {
+    elSigninOverlay.classList.add('hidden');
+    pendingView = null;
+}
 
-elSigninForm.onsubmit = async (e) => {
-    e.preventDefault();
-    elSigninSubmit.disabled = true;
-    elSigninSubmit.querySelector('.btn-loader').classList.remove('hidden');
-    try {
+if (elSigninCancel) elSigninCancel.onclick = closeSignin;
+
+if (elSigninNextBtn) {
+    elSigninNextBtn.onclick = () => {
         const email = elSigninEmail.value.trim();
-        const allowedEmail = import.meta.env.VITE_ALLOWED_EMAIL;
+        if (!email) {
+            elSigninError.textContent = 'Please enter a valid email address.';
+            elSigninError.classList.remove('hidden');
+            return;
+        }
+        elSigninError.classList.add('hidden');
+        elDisplayEmail.textContent = email;
         
-        // Ensure only the specific email from .env is allowed to attempt login
-        if (allowedEmail && email.toLowerCase() !== allowedEmail.toLowerCase()) {
-            throw new Error("Unauthorized email address");
+        // Slide up step 1, show step 2
+        elSigninStep1.classList.add('hidden-step');
+        elSigninStep2.classList.remove('hidden-step');
+        
+        // Auto focus passcode
+        setTimeout(() => elSigninPass.focus(), 300);
+    };
+}
+
+if (elSigninBackStep) {
+    elSigninBackStep.onclick = () => {
+        elSigninStep2.classList.add('hidden-step');
+        elSigninStep1.classList.remove('hidden-step');
+        elSigninError.classList.add('hidden');
+    };
+}
+
+if (elPassToggle) {
+    elPassToggle.onclick = () => {
+        const isPass = elSigninPass.type === 'password';
+        elSigninPass.type = isPass ? 'text' : 'password';
+        elPassIcon.className = isPass ? 'fas fa-eye' : 'fas fa-eye-slash';
+    };
+}
+
+if (elSigninForm) {
+    elSigninForm.onsubmit = async (e) => {
+        e.preventDefault();
+        
+        // Check if we accidentally submitted on Step 1 (e.g. by hitting Enter)
+        if (!elSigninStep1.classList.contains('hidden-step')) {
+            elSigninNextBtn.click();
+            return;
         }
 
-        const { error } = await sb.auth.signInWithPassword({ email: email, password: elSigninPass.value });
-        if (error) throw error;
-        State.sbLoggedIn = true;
-        elSigninOverlay.classList.add('hidden');
-        if (pendingView) navigateTo(pendingView);
-    } catch (err) {
-        elSigninError.textContent = 'Invalid credentials';
-        elSigninError.classList.remove('hidden');
-    } finally {
-        elSigninSubmit.disabled = false;
-        elSigninSubmit.querySelector('.btn-loader').classList.add('hidden');
-    }
-};
+        elSigninSubmit.disabled = true;
+        elSigninSubmit.querySelector('.btn-loader').classList.remove('hidden');
+        try {
+            const email = elSigninEmail.value.trim();
+            const allowedEmail = import.meta.env.VITE_ALLOWED_EMAIL;
+            
+            // Ensure only the specific email from .env is allowed to attempt login
+            if (allowedEmail && email.toLowerCase() !== allowedEmail.toLowerCase()) {
+                throw new Error("Unauthorized email address");
+            }
+
+            const { error } = await sb.auth.signInWithPassword({ email: email, password: elSigninPass.value });
+            if (error) throw error;
+            State.sbLoggedIn = true;
+            closeSignin();
+            if (pendingView) navigateTo(pendingView);
+        } catch (err) {
+            elSigninError.textContent = 'Incorrect Passcode or Email';
+            elSigninError.classList.remove('hidden');
+        } finally {
+            elSigninSubmit.disabled = false;
+            elSigninSubmit.querySelector('.btn-loader').classList.add('hidden');
+        }
+    };
+}
 
 async function logout() {
     if (!confirm('Lock the site?')) return;

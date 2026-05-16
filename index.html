@@ -92,45 +92,51 @@
          LAYER 3: SUPABASE SIGN IN
     ===================================================== -->
     <div id="signin-overlay" class="signin-overlay hidden" role="dialog" aria-modal="true" aria-label="Sign In">
-        <div class="signin-screen">
-            <div class="status-bar">
-                <span class="time">09:41</span>
-                <div class="status-icons">
-                    <i class="fas fa-signal"></i>
-                    <i class="fas fa-wifi"></i>
-                    <i class="fas fa-battery-full"></i>
-                </div>
-            </div>
-            <div class="signin-header">
-                <button id="signin-back-btn" class="back-btn" aria-label="Go back">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-            </div>
-            <h1 class="signin-title">Sign In</h1>
+        <!-- Deep Antigravity Black background with blurred Romantic Red glow -->
+        <div class="signin-bg-glow"></div>
+        <div class="signin-card">
+            <h1 class="signin-title">Time Capsule</h1>
+            
             <form id="signin-form" class="signin-form">
-                <div class="input-group">
-                    <label for="signin-email">Email</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-envelope input-icon"></i>
-                        <input type="email" id="signin-email" placeholder="Example@gmail.com" required>
+                <!-- STEP 1: EMAIL -->
+                <div id="signin-step-1" class="signin-step">
+                    <div class="input-group">
+                        <label for="signin-email">Admin Email</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input type="email" id="signin-email" placeholder="Enter your email" required>
+                        </div>
                     </div>
+                    <button type="button" class="signin-next-btn" id="signin-next-btn">
+                        <span class="btn-text">Next</span>
+                    </button>
                 </div>
-                <div class="input-group">
-                    <label for="signin-password">Password</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock input-icon"></i>
-                        <input type="password" id="signin-password" placeholder="********" required>
-                        <button type="button" class="toggle-password" id="toggle-password-btn" aria-label="Toggle password visibility">
-                            <i class="fas fa-eye-slash" id="toggle-password-icon"></i>
-                        </button>
+
+                <!-- STEP 2: PASSCODE (Hidden initially) -->
+                <div id="signin-step-2" class="signin-step hidden-step">
+                    <div class="signin-back-step" id="signin-back-step">
+                        <i class="fas fa-arrow-left"></i> <span id="display-entered-email">user@example.com</span>
                     </div>
+                    <div class="input-group">
+                        <label for="signin-password">Passcode</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input type="password" id="signin-password" placeholder="••••••••" required>
+                            <button type="button" class="toggle-password" id="toggle-password-btn" aria-label="Toggle password visibility">
+                                <i class="fas fa-eye-slash" id="toggle-password-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="submit" class="signin-submit-btn" id="signin-submit-btn">
+                        <span class="btn-text">Login</span>
+                        <i class="fas fa-spinner fa-spin btn-loader hidden"></i>
+                    </button>
                 </div>
-                <button type="submit" class="signin-submit-btn" id="signin-submit-btn">
-                    <span class="btn-text">Sign In</span>
-                    <i class="fas fa-spinner fa-spin btn-loader hidden"></i>
-                </button>
+
                 <div id="signin-error" class="signin-error hidden"></div>
             </form>
+            
+            <button id="signin-cancel-btn" class="signin-cancel-btn">Cancel</button>
         </div>
     </div>
 
