@@ -742,11 +742,12 @@ async function renderStreamTapeView() {
                     <button id="st-select-file-btn" style="width:100%; height:120px; background:rgba(229,9,20,0.05); border:2px dashed rgba(229,9,20,0.3); border-radius:15px; color:#ff0033; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; transition:all 0.2s;">
                         <i class="fas fa-film" style="font-size:2rem;"></i>
                         <span>Tap to Select Video</span>
-                        <small id="st-selected-filename" style="color:#666; font-size:0.8rem;"></small>
+                        <small id="st-selected-filename" style="color:#aaa; font-size:0.8rem; margin-top:5px;"></small>
                     </button>
                     <div id="st-progress-wrapper" class="hidden" style="height:8px; background:#333; border-radius:4px; overflow:hidden;">
                         <div id="st-progress-bar" style="width:0%; height:100%; background:#ff0033; transition:width 0.1s;"></div>
                     </div>
+                    <p id="st-progress-text" class="hidden" style="color:#ff0033; font-size:0.8rem; text-align:center; margin:0;">Uploading... 0%</p>
                     <button id="st-submit-btn" style="width:100%; background:#ff0033; color:#fff; border:none; padding:16px; border-radius:12px; font-weight:800; font-size:1.1rem; cursor:pointer; box-shadow:0 10px 20px rgba(229,9,20,0.3);">UPLOAD TO TIME CAPSULE</button>
                 </div>
             </div>`;
@@ -758,8 +759,15 @@ async function renderStreamTapeView() {
     const submitBtn = document.getElementById('st-submit-btn');
     const titleInput = document.getElementById('st-title-input');
     const fileInput = document.getElementById('st-file-input');
-    const selectFileBtn = document.getElementById('st-select-file-btn');
-    const filenameDisplay = document.getElementById('st-selected-filename');
+    const selectFileBtn = modal.querySelector('#st-select-file-btn');
+    const filenameDisplay = modal.querySelector('#st-selected-filename');
+
+    selectFileBtn.onclick = () => fileInput.click();
+    fileInput.onchange = () => {
+        if (fileInput.files.length > 0) {
+            filenameDisplay.textContent = "Selected: " + fileInput.files[0].name;
+        }
+    };
 
     fab.onclick = () => {
         modal.classList.remove('hidden');
