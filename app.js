@@ -315,7 +315,6 @@ function navigateTo(view) {
         videos:     renderVideosView,
         streamtape: renderStreamTapeView,
         letters:    renderLettersView,
-        games:      renderGamesView,
         settings:   renderSettingsView,
     };
 
@@ -1325,28 +1324,6 @@ function showStickyNote(mem) {
 // ================================================================
 const EMOJIS = ['💖','💍','🏠','🌍','✨','🌹','👩‍❤️‍👨','🍕'];
 
-function renderGamesView() {
-    elContentArea.innerHTML = `
-        <div class="section-wrap view-enter">
-            <h2 class="section-title">Games Zone</h2>
-            <div class="game-tabs">
-                <button class="tab-btn active" data-game="memory">Memory Match</button>
-                <button class="tab-btn" data-game="catch">Catch the Love</button>
-                <button class="tab-btn" data-game="secret">Secret Vault</button>
-            </div>
-            <div id="game-container" class="game-display"></div>
-        </div>`;
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            loadGame(btn.dataset.game);
-        };
-    });
-
-    loadGame('memory');
-}
 
 function loadGame(game) {
     const container = document.getElementById('game-container');
@@ -1364,33 +1341,6 @@ function loadGame(game) {
                 <button onclick="window._checkSecret()">Unlock Vault</button>
                 <div id="secret-reveal" class="hidden">
                     <p class="script-font">I love you more than all the stars in the gravity of us. 💖</p>
-                </div>
-            </div>`;
-    }
-}
-
-function initMemoryGame() {
-    const grid = document.getElementById('m-grid');
-    const cards = [...EMOJIS, ...EMOJIS].sort(() => Math.random() - 0.5);
-    State.memMatched = 0;
-    grid.innerHTML = '';
-    cards.forEach(emoji => {
-        const card = document.createElement('div');
-        card.className = 'mem-card';
-        card.dataset.emoji = emoji;
-        card.innerHTML = `<div class="front">?</div><div class="back">${emoji}</div>`;
-        card.onclick = () => {
-            if (State.memLocked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
-            card.classList.add('flipped');
-            const flipped = document.querySelectorAll('.mem-card.flipped:not(.matched)');
-            if (flipped.length === 2) {
-                State.memLocked = true;
-                setTimeout(() => {
-                    if (flipped[0].dataset.emoji === flipped[1].dataset.emoji) {
-                        flipped[0].classList.add('matched'); flipped[1].classList.add('matched');
-                        State.memMatched += 2;
-                        if (State.memMatched === cards.length) launchConfetti();
-                    }
                     flipped[0].classList.remove('flipped'); flipped[1].classList.remove('flipped');
                     State.memLocked = false;
                 }, 800);

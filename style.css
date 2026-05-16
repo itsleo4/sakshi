@@ -2010,341 +2010,163 @@ body.sidebar-open { overflow: hidden; }
 
 
 
-.letters-container {
 
-    display: grid;
+/* ────────────────────────────────────────────────────────────
+   10. LOVE LETTERS (PREMIUM DARK REDESIGN)
+──────────────────────────────────────────────────────────── */
 
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-
-    gap: 2rem;
-
-    padding: 1rem;
-
-    perspective: 1000px; /* For potential 3D effects */
-
-}
-
-
-
-.search-wrapper {
-
+.letters-header {
     display: flex;
-
+    justify-content: space-between;
     align-items: center;
-
-    background: rgba(255, 255, 255, 0.9);
-
-    border: 1px solid rgba(255, 138, 138, 0.2);
-
-    border-radius: 20px;
-
-    padding: 0 1.5rem;
-
-    height: 56px;
-
-    box-shadow: 0 8px 32px rgba(255, 138, 138, 0.1);
-
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-    margin: 0 1rem 2.5rem;
-
+    margin-bottom: 2.5rem;
+    padding: 20px 4%;
 }
 
-
-
-.search-wrapper:focus-within {
-
-    transform: translateY(-2px);
-
-    border-color: var(--pink);
-
-    box-shadow: 0 12px 40px rgba(255, 138, 138, 0.2);
-
+.letters-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2.5rem;
+    padding: 0 4% 120px;
 }
 
+@media (max-width: 600px) {
+    .letters-container { grid-template-columns: 1fr; }
+}
 
+.search-notes-wrap {
+    display: flex;
+    align-items: center;
+    background: rgba(20, 20, 20, 0.6);
+    border: 1px solid rgba(229, 9, 20, 0.2);
+    border-radius: 30px;
+    padding: 0 1.2rem;
+    height: 48px;
+    backdrop-filter: blur(10px);
+}
 
-/* Note Cards Refined - Cosmic Glassmorphism */
+.search-notes-wrap i { color: var(--netflix-red); margin-right: 12px; }
+.search-notes-wrap input {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 0.95rem;
+    outline: none;
+    width: 200px;
+}
 
+/* Premium Note Cards */
 .note-card {
-
-    background: rgba(255, 255, 255, 0.7);
-
-    backdrop-filter: blur(12px);
-
-    -webkit-backdrop-filter: blur(12px);
-
-    border: 1px solid rgba(255, 255, 255, 0.3);
-
-    border-radius: 28px;
-
-    padding: 1.8rem;
-
     position: relative;
-
-    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 2.2rem;
     cursor: pointer;
-
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
     overflow: hidden;
-
-    animation: floating-card 6s ease-in-out infinite;
-
 }
 
-
-
-@keyframes floating-card {
-
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-
-    33% { transform: translateY(-8px) rotate(1deg); }
-
-    66% { transform: translateY(-4px) rotate(-1deg); }
-
+.note-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 5px; height: 100%;
+    background: var(--netflix-red);
+    opacity: 0.4;
+    transition: opacity 0.3s;
 }
-
-
-
-/* Staggered animation delays for the floating effect */
-
-.note-card:nth-child(2n) { animation-delay: -1s; }
-
-.note-card:nth-child(3n) { animation-delay: -2s; }
-
-.note-card:nth-child(4n) { animation-delay: -3.5s; }
-
-
 
 .note-card:hover {
-
-    transform: translateY(-12px) scale(1.03) !important;
-
-    background: rgba(255, 255, 255, 0.9);
-
-    border-color: var(--pink);
-
-    box-shadow: 0 20px 40px rgba(255, 138, 138, 0.15), 0 0 20px rgba(255, 138, 138, 0.1);
-
-    animation-play-state: paused;
-
+    transform: translateY(-10px);
+    background: rgba(15, 15, 15, 0.95);
+    border-color: rgba(229, 9, 20, 0.4);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.9);
 }
 
+.note-card:hover::before { opacity: 1; }
 
-
-/* Centered Pin Sign */
-
-.note-card.pinned::before {
-
-    content: '\f08d';
-
-    font-family: 'Font Awesome 6 Free';
-
-    font-weight: 900;
-
-    position: absolute;
-
-    top: -12px;
-
-    left: 50%;
-
-    transform: translateX(-50%) rotate(-15deg);
-
-    width: 32px;
-
-    height: 32px;
-
-    background: linear-gradient(135deg, var(--gold), var(--hover-peach));
-
-    border-radius: 50%;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    font-size: 0.9rem;
-
-    color: white;
-
-    box-shadow: 0 4px 12px rgba(255, 215, 122, 0.4);
-
-    z-index: 10;
-
-    pointer-events: none;
-
+.note-card h3 {
+    font-family: var(--font-head);
+    font-size: 1.5rem;
+    color: var(--netflix-red);
+    margin-bottom: 1.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    line-height: 1.2;
 }
 
-
-
-/* Theme Colors for Cards */
-
-.note-card.color-yellow { 
-
-    background: rgba(255, 215, 0, 0.08); 
-
-    border-color: rgba(255, 215, 0, 0.3); 
-
-    box-shadow: 0 8px 32px rgba(255, 215, 0, 0.05);
-
-}
-
-.note-card.color-yellow .note-card__title { color: #ffd700; }
-
-
-
-.note-card.color-blue { 
-
-    background: rgba(65, 105, 225, 0.08); 
-
-    border-color: rgba(65, 105, 225, 0.3); 
-
-    box-shadow: 0 8px 32px rgba(65, 105, 225, 0.05);
-
-}
-
-.note-card.color-blue .note-card__title { color: #7afcff; }
-
-
-
-.note-card.color-pink { 
-
-    background: rgba(255, 126, 179, 0.08); 
-
-    border-color: rgba(255, 126, 179, 0.3); 
-
-    box-shadow: 0 8px 32px rgba(255, 126, 179, 0.05);
-
-}
-
-.note-card.color-pink .note-card__title { color: #ff7eb3; }
-
-
-
-/* Default Style */
-
-.note-card.color-default {
-
-    background: rgba(255, 255, 255, 0.85);
-
-    border: 1px solid rgba(255, 138, 138, 0.2);
-
-}
-
-
-
-.note-card__title {
-
-    font-family: 'Great Vibes', cursive;
-
-    font-size: 1.6rem;
-
-    margin-bottom: 0.8rem;
-
-    color: #ff7b91;
-
-}
-
-
-
-.note-card__body {
-
-    font-size: 0.95rem;
-
-    line-height: 1.6;
-
-    color: #666;
-
+.note-card p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.8);
     display: -webkit-box;
-
-    -webkit-line-clamp: 4;
-
+    -webkit-line-clamp: 6;
     -webkit-box-orient: vertical;
-
     overflow: hidden;
-
 }
 
-
+.note-card__pin {
+    position: absolute;
+    top: 1.8rem; right: 1.8rem;
+    color: var(--netflix-red);
+    font-size: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.note-card__pin.visible { opacity: 1; }
 
 .note-card__footer {
-
-    margin-top: 1.5rem;
-
+    margin-top: 2.5rem;
     display: flex;
-
-    justify-content: flex-end;
-
-    opacity: 0.6;
-
-    font-size: 0.8rem;
-
-}
-
-
-
-/* FAB Positioning & Animation */
-
-.add-note-fab {
-
-    position: fixed;
-
-    bottom: 2.5rem;
-
-    right: 1.5rem; 
-
-    width: 64px;
-
-    height: 64px;
-
-    background: linear-gradient(135deg, var(--gold), var(--hover-peach));
-
-    border-radius: 20px;
-
-    display: flex;
-
+    justify-content: space-between;
     align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 1.2rem;
+}
 
-    justify-content: center;
+.note-card__footer span {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
 
-    color: white;
-
-    font-size: 1.8rem;
-
-    box-shadow: 0 10px 30px rgba(255, 215, 122, 0.3);
-
+.note-card__dots {
+    background: none; border: none;
+    color: rgba(255,255,255,0.5);
     cursor: pointer;
+    padding: 8px;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+.note-card__dots:hover { color: var(--netflix-red); transform: scale(1.2); }
 
+/* Theme Colors (Subtle Accents) */
+.note-card.color-yellow::before { background: #ffd700; }
+.note-card.color-blue::before { background: #007bff; }
+.note-card.color-pink::before { background: #ff69b4; }
+
+/* FAB Styling */
+.add-note-fab {
+    position: fixed;
+    bottom: 40px; right: 40px;
+    width: 65px; height: 65px;
+    background: var(--netflix-red);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.8rem;
+    box-shadow: 0 10px 30px rgba(229, 9, 20, 0.5);
+    cursor: pointer;
     z-index: 1000;
-
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-
 }
-
-
-
-.add-note-fab.scrolling {
-
-    transform: scale(0.5) translateY(50px);
-
-    opacity: 0;
-
-    visibility: hidden;
-
+.add-note-fab:hover {
+    transform: scale(1.15) rotate(90deg);
+    box-shadow: 0 15px 40px rgba(229, 9, 20, 0.7);
 }
-
-
-
-.add-note-fab:active {
-
-    transform: scale(0.9);
-
-}
-
-
 
 /* Note Editor Modal */
 
