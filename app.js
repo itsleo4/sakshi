@@ -706,9 +706,9 @@ async function renderStreamTapeView() {
                 <i class="fas fa-plus"></i>
             </button>
 
-            <!-- Modern YouTube Style Upload Modal -->
-            <div id="st-upload-modal" class="signin-overlay hidden" style="z-index: 9999; display:flex; align-items:flex-end; padding:0; background:rgba(0,0,0,0.8);">
-                <div class="signin-screen" style="height: auto; width: 100%; border-radius: 20px 20px 0 0; background: #111; padding: 25px 20px 40px 20px; animation: slideUp 0.3s ease-out; box-shadow: 0 -10px 30px rgba(255,0,51,0.2); max-width: 600px; margin: 0 auto;">
+            <!-- Modern YouTube Style Upload Modal (Fixed Position) -->
+            <div id="st-upload-modal" class="hidden" style="position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); transition:all 0.4s ease; padding:20px;">
+                <div class="signin-screen" style="height: auto; width: 100%; border-radius: 20px; background: #111; padding: 40px 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(255,0,51,0.2); max-width: 500px; margin: 0 auto; transform-origin: top right; transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
                         <h1 style="font-size: 1.4rem; color: #fff; margin:0; font-family:var(--font-body); font-weight:700;">Upload Video</h1>
                         <button id="st-close-btn" style="background:transparent; border:none; color:#fff; font-size:1.5rem; cursor:pointer;"><i class="fas fa-times"></i></button>
@@ -767,8 +767,23 @@ async function renderStreamTapeView() {
     const selectFileBtn = document.getElementById('st-select-file-btn');
     const filenameDisplay = document.getElementById('st-selected-filename');
 
-    fab.onclick = () => modal.classList.remove('hidden');
-    closeBtn.onclick = () => modal.classList.add('hidden');
+    fab.onclick = () => {
+        modal.classList.remove('hidden');
+        const screen = modal.querySelector('.signin-screen');
+        screen.style.transform = 'scale(0) translateY(-100px)';
+        screen.style.opacity = '0';
+        setTimeout(() => {
+            screen.style.transform = 'scale(1) translateY(0)';
+            screen.style.opacity = '1';
+        }, 10);
+    };
+    
+    closeBtn.onclick = () => {
+        const screen = modal.querySelector('.signin-screen');
+        screen.style.transform = 'scale(0) translateY(-100px)';
+        screen.style.opacity = '0';
+        setTimeout(() => modal.classList.add('hidden'), 400);
+    };
 
     selectFileBtn.onclick = () => fileInput.click();
     fileInput.onchange = () => {
