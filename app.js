@@ -1208,7 +1208,7 @@ let earthScene, earthCamera, earthRenderer, earthGroup, memoryPins = [];
 let isAnimatingToPin = false;
 
 function init3DHero() {
-    const container = document.getElementById('earth-container');
+    const container = document.getElementById('hero-3d-container');
     if (!container || earthRenderer) return;
 
     earthScene = new THREE.Scene();

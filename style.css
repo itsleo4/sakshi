@@ -4432,3 +4432,176 @@ body {
     font-size: 0.75rem; opacity: 0; transition: opacity 0.2s;
 }
 .ag-photo-item:hover .ag-photo-dots { opacity: 1; }
+
+/* ────────────────────────────────────────────────────────────
+   18. PREMIUM TIME CAPSULE LOGIN (NETFLIX STYLE)
+──────────────────────────────────────────────────────────── */
+
+.signin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    transition: all 0.5s ease;
+}
+
+.signin-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.signin-bg-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(229, 9, 20, 0.2) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+}
+
+.signin-card {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    background: rgba(15, 15, 15, 0.85);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 60px 45px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+}
+
+.signin-title {
+    font-family: var(--font-head);
+    font-size: 2.2rem;
+    color: #E50914;
+    text-align: center;
+    margin-bottom: 35px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.input-group { margin-bottom: 25px; }
+
+.input-group label {
+    display: block;
+    color: #8c8c8c;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.input-wrapper {
+    position: relative;
+    background: #333;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: background 0.3s;
+}
+
+.input-wrapper:focus-within {
+    background: #454545;
+    box-shadow: inset 0 -2px 0 #E50914;
+}
+
+.input-icon {
+    position: absolute;
+    left: 15px; top: 50%;
+    transform: translateY(-50%);
+    color: #E50914;
+    font-size: 1.1rem;
+}
+
+.input-wrapper input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 16px 15px 16px 45px;
+    color: #fff;
+    font-size: 1.05rem;
+    outline: none;
+}
+
+.signin-next-btn, .signin-submit-btn {
+    width: 100%;
+    background: #E50914;
+    color: #fff;
+    border: none;
+    padding: 16px;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 10px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+
+.signin-next-btn:hover, .signin-submit-btn:hover {
+    background: #f40612;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(229, 9, 20, 0.4);
+}
+
+.signin-next-btn:active, .signin-submit-btn:active { transform: translateY(0); }
+
+.signin-step { transition: all 0.4s ease; }
+.signin-step.hidden-step {
+    display: none;
+}
+
+.signin-back-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #8c8c8c;
+    cursor: pointer;
+    margin-bottom: 25px;
+    font-size: 0.9rem;
+    transition: color 0.3s;
+}
+.signin-back-step:hover { color: #fff; }
+
+.signin-error {
+    background: #e87c03;
+    color: #fff;
+    padding: 12px 15px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.signin-cancel-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    color: #8c8c8c;
+    margin-top: 25px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-align: center;
+}
+.signin-cancel-btn:hover { color: #fff; text-decoration: underline; }
+
+.toggle-password {
+    position: absolute;
+    right: 15px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: #8c8c8c; cursor: pointer;
+    padding: 5px;
+}
+.toggle-password:hover { color: #fff; }
+
+@media (max-width: 480px) {
+    .signin-card { padding: 40px 25px; }
+}
