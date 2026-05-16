@@ -745,7 +745,7 @@ async function renderStreamTapeView() {
 
             <div class="yt-mobile-feed" id="st-list" style="display:flex; flex-direction:column; gap:20px; margin-top:20px;"></div>
             
-            <div id="st-load-more-trigger" style="height:40px; margin:20px 0; display:flex; justify-content:center; align-items:center;">
+            <div id="st-load-more-trigger" style="height:20px; margin:10px 0; display:flex; justify-content:center; align-items:center;">
                 <i class="fas fa-spinner fa-spin hidden" id="st-load-spinner" style="color:#ff0033; font-size:1.5rem;"></i>
             </div>
 
@@ -769,6 +769,10 @@ async function renderStreamTapeView() {
 
     fab.onclick = () => {
         modal.classList.remove('hidden');
+        // LOCK SCROLL
+        const contentArea = document.getElementById('content-area');
+        if (contentArea) contentArea.style.overflow = 'hidden';
+
         const screen = modal.querySelector('.signin-screen');
         screen.style.transform = 'scale(0) translateY(-100px)';
         screen.style.opacity = '0';
@@ -779,6 +783,10 @@ async function renderStreamTapeView() {
     };
     
     closeBtn.onclick = () => {
+        // UNLOCK SCROLL
+        const contentArea = document.getElementById('content-area');
+        if (contentArea) contentArea.style.overflow = 'auto';
+
         const screen = modal.querySelector('.signin-screen');
         screen.style.transform = 'scale(0) translateY(-100px)';
         screen.style.opacity = '0';
@@ -827,6 +835,10 @@ async function renderStreamTapeView() {
             progWrapper.classList.add('hidden');
             progText.classList.add('hidden');
             
+            // UNLOCK SCROLL
+            const contentArea = document.getElementById('content-area');
+            if (contentArea) contentArea.style.overflow = 'auto';
+
             // Immediately prepend card
             prependNewVideoCard(result.id, title, new Date().toISOString());
             showSTToast("Video Uploaded Successfully!");
