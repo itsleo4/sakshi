@@ -1081,68 +1081,31 @@ function createVideoCardElement(f) {
 
 // Load StreamTape video via direct MP4 URL (2-step API: dlticket → dl)
 // We use this approach because StreamTape blocks iframe embeds via X-Frame-Options.
-window.loadStreamtapeIframe = async function(container, linkid) {
-    if (container.querySelector('video')) return; // already loaded
+window.loadStreamtapeIframe = function(container, linkid) {
+    if (container.querySelector('iframe')) return; // already loaded
 
     const placeholder = container.querySelector('.st-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
 
-    // Show a loading spinner while we fetch the URL
-    if (placeholder) {
-        placeholder.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
-            <i class="fas fa-spinner fa-spin" style="color:#ff0033;font-size:2rem;"></i>
-            <span style="color:#aaa;font-size:0.85rem;">Loading video...</span>
-        </div>`;
-    }
+    // Create iframe using streamta.pe which is an adblock-resistant mirror
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://streamta.pe/e/${linkid}`;
+    iframe.frameBorder = "0";
+    iframe.allowFullscreen = true;
+    iframe.allowTransparency = true;
+    iframe.allow = "autoplay";
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.position = "absolute";
+    iframe.style.inset = "0";
+    iframe.style.zIndex = "1";
+    iframe.style.background = "#000";
 
-    try {
-        // Step 1: Get a download ticket
-        const ticketRes = await fetch(stApiUrl(`/file/dlticket?login=${stLogin}&key=${stKey}&file=${linkid}`));
-        const ticketData = await ticketRes.json();
-        if (ticketData.status !== 200) throw new Error(ticketData.msg || 'Could not get ticket');
+    // Ensure the dots/menu button stays on top of the iframe
+    const dotsBtn = container.querySelector('.st-dots-btn');
+    if (dotsBtn) dotsBtn.style.zIndex = "10";
 
-        const ticket = ticketData.result.ticket;
-        const waitTime = (ticketData.result.wait_time || 0) * 1000;
-
-        // Step 2: Wait the required time, then get the direct URL
-        await new Promise(r => setTimeout(r, waitTime));
-        const dlRes = await fetch(stApiUrl(`/file/dl?file=${linkid}&ticket=${ticket}`));
-        const dlData = await dlRes.json();
-        if (dlData.status !== 200) throw new Error(dlData.msg || 'Could not get download URL');
-
-        const directUrl = dlData.result.url;
-
-        // Hide placeholder and inject a native HTML5 video player
-        if (placeholder) placeholder.style.display = 'none';
-
-        const video = document.createElement('video');
-        video.src = directUrl;
-        video.controls = true;
-        video.autoplay = true;
-        video.playsInline = true;
-        video.style.width = "100%";
-        video.style.height = "100%";
-        video.style.position = "absolute";
-        video.style.inset = "0";
-        video.style.zIndex = "1";
-        video.style.background = "#000";
-
-        // Ensure the dots/menu button stays on top of the video
-        const dotsBtn = container.querySelector('.st-dots-btn');
-        if (dotsBtn) dotsBtn.style.zIndex = "10";
-
-        container.insertBefore(video, container.firstChild);
-
-    } catch (err) {
-        // Show a friendly error inside the player box
-        if (placeholder) {
-            placeholder.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px;text-align:center;">
-                <i class="fas fa-exclamation-circle" style="color:#ff0033;font-size:1.8rem;"></i>
-                <span style="color:#aaa;font-size:0.8rem;">Could not load video.<br>${err.message}</span>
-            </div>`;
-            placeholder.style.display = 'flex';
-        }
-        console.error('StreamTape load error:', err);
-    }
+    container.insertBefore(iframe, container.firstChild);
 }
 
 function showSTToast(msg) {
