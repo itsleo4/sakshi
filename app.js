@@ -697,7 +697,26 @@ let stCurrentPage = 0;
 const ST_ITEMS_PER_PAGE = 5;
 
 function stApiUrl(path) {
-    return 'https://api.streamtape.com' + path;
+    const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    // Use deployed URL as fallback on local so it works during development too
+    const proxyBase = isLocal ? 'https://sakshi-phi.vercel.app/api/streamtape' : '/api/streamtape';
+
+    const parsed = new URL(path, 'http://dummy.com');
+    const pathname = parsed.pathname;
+    const params = parsed.searchParams;
+
+    // Extract action (e.g. dlticket, dl, rename, delete, listfolder, ul)
+    const action = pathname.replace('/file/', '');
+
+    const proxyUrl = new URL(proxyBase, window.location.origin);
+    proxyUrl.searchParams.set('action', action);
+
+    // Forward the key params
+    if (params.has('file')) proxyUrl.searchParams.set('file', params.get('file'));
+    if (params.has('ticket')) proxyUrl.searchParams.set('ticket', params.get('ticket'));
+    if (params.has('name')) proxyUrl.searchParams.set('name', params.get('name'));
+
+    return proxyUrl.toString();
 }
 
 async function renderStreamTapeView() {
